@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TX6373 con sonda remota en varilla: dispositivo y uso en un barreno (concepto)</title>
+<style>
+:root {
+  --bg: #f3f5f8;
+  --fg: #1b2230;
+  --muted: #5a6477;
+  --line: #3a4560;
+  --chip: #ffffffd9;
+  --border: #cfd5e0;
+  --accent: #1f5fd6;
+  --accent-fg: #ffffff;
+  --lw: 214px;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151d;
+    --fg: #e7ebf3;
+    --muted: #9aa4b8;
+    --line: #a9b4cc;
+    --chip: #1a2030d9;
+    --border: #2d3548;
+    --accent: #7aa2ff;
+    --accent-fg: #0c1220;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151d;
+  --fg: #e7ebf3;
+  --muted: #9aa4b8;
+  --line: #a9b4cc;
+  --chip: #1a2030d9;
+  --border: #2d3548;
+  --accent: #7aa2ff;
+  --accent-fg: #0c1220;
+}
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.app { height: 100%; display: flex; flex-direction: column; }
+header { padding: 14px 18px 0; }
+h1 { margin: 0; font-size: 1.15rem; font-weight: 650; letter-spacing: -0.01em; }
+header p { margin: 4px 0 0; font-size: 0.875rem; color: var(--muted); max-width: 78ch; line-height: 1.45; }
+.tabs { display: flex; gap: 6px; padding: 12px 18px 10px; }
+.tabs button { padding: 7px 14px; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+#stage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; }
+#stage canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+#stage canvas:active { cursor: grabbing; }
+#wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#wires line { stroke: var(--line); stroke-width: 1; opacity: 0.7; }
+#wires circle { fill: var(--line); }
+.lb {
+  position: absolute;
+  top: 0;
+  width: var(--lw);
+  font-size: 0.9rem;
+  line-height: 1.3;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--chip);
+  border: 1px solid transparent;
+  cursor: default;
+  transition: border-color 0.15s;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.lb.l { left: 12px; text-align: left; }
+.lb.r { right: 12px; text-align: right; }
+.lb.on { border-color: var(--accent); }
+.lb small { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.tg {
+  font-style: normal;
+  font-size: 0.7rem;
+  padding: 0 5px;
+  margin-right: 5px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.tg.doc { border-color: var(--accent); color: var(--accent); }
+.lb.r .tg { margin-right: 0; margin-left: 5px; order: 2; }
+.hide-labels .lb, .hide-labels #wires { display: none; }
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 18px 14px;
+  border-top: 1px solid var(--border);
+}
+.bar label { font-size: 0.875rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+input[type="range"] { width: min(260px, 40vw); accent-color: var(--accent); }
+button {
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+button[aria-pressed="true"] { border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app[data-view="worn"] .only-device { display: none; }
+.app[data-view="device"] .only-worn { display: none; }
+#err { display: none; padding: 24px; color: var(--muted); }
+@media (max-width: 720px) {
+  :root { --lw: 126px; }
+  .lb { font-size: 0.8rem; padding: 4px 6px; }
+  .lb small { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app" data-view="device">
+  <header>
+    <h1>Trolex TX6373 con sonda remota en varilla (concepto)</h1>
+    <p>La varilla y el barreno son una interpretación: no encontré esa pieza en la documentación de Trolex.</p>
+  </header>
+  <div class="tabs" role="tablist">
+    <button id="tab-device" type="button" role="tab" aria-selected="true">Dispositivo explosionado</button>
+    <button id="tab-worn" type="button" role="tab" aria-selected="false">Usado en el barreno</button>
+  </div>
+  <div id="stage">
+    <svg id="wires" aria-hidden="true"></svg>
+  </div>
+  <div id="err">Tu navegador no pudo iniciar WebGL, así que no se puede mostrar el modelo 3D.</div>
+  <div class="bar">
+    <label class="only-device" for="ex">Explosión
+      <input id="ex" type="range" min="0" max="1" step="0.001" value="0">
+    </label>
+    <button id="toggle" class="primary only-device" type="button">Ensamblar</button>
+    <button id="reset" class="only-device" type="button">Restablecer vista</button>
+    <button id="hole" class="only-worn" type="button">Acercar al hueco</button>
+    <button id="overview" class="only-worn" type="button">Vista general</button>
+    <button id="spin" type="button" aria-pressed="true">Giro automático</button>
+    <button id="lbl" type="button" aria-pressed="true">Etiquetas</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  var app = document.querySelector('.app');
+  var stage = document.getElementById('stage');
+  var wires = document.getElementById('wires');
+  var NS = 'http://www.w3.org/2000/svg';
+  var renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  } catch (e) {
+    stage.style.display = 'none';
+    document.getElementById('err').style.display = 'block';
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  stage.insertBefore(renderer.domElement, wires);
+
+  var V = function (x, y, z) { return new THREE.Vector3(x, y, z); };
+
+  /* ---------- helpers ---------- */
+  function mat(color, o) {
+    o = o || {};
+    var m = new THREE.MeshStandardMaterial({
+      color: color,
+      roughness: o.rough !== undefined ? o.rough : 0.55,
+      metalness: o.metal !== undefined ? o.metal : 0.05
+    });
+    if (o.opacity !== undefined) {
+      m.transparent = true;
+      m.opacity = o.opacity;
+      m.depthWrite = false;
+    }
+    return m;
+  }
+  function withEdges(mesh, strength) {
+    mesh.add(new THREE.LineSegments(
+      new THREE.EdgesGeometry(mesh.geometry),
+      new THREE.LineBasicMaterial({ color: 0x1f2740, transparent: true, opacity: strength === undefined ? 0.32 : strength })
+    ));
+    return mesh;
+  }
+  function box(w, h, d, color, o) {
+    o = o || {};
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color, o));
+    if (o.edges !== false) withEdges(m, o.edgeStrength);
+    return m;
+  }
+  function cyl(r, h, color, o) {
+    o = o || {};
+    var g = new THREE.CylinderGeometry(r, r, h, o.seg || 28);
+    if (o.axis === 'z') g.rotateX(Math.PI / 2);
+    if (o.axis === 'x') g.rotateZ(Math.PI / 2);
+    var m = new THREE.Mesh(g, mat(color, o));
+    if (o.edges) withEdges(m);
+    return m;
+  }
+  function sph(r, color, o) {
+    return new THREE.Mesh(new THREE.SphereGeometry(r, 20, 14), mat(color, o || { rough: 0.7 }));
+  }
+  function put(group, mesh, x, y, z) {
+    mesh.position.set(x, y, z);
+    group.add(mesh);
+    return mesh;
+  }
+  function limb(a, b, r, color) {
+    var d = new THREE.Vector3().subVectors(b, a);
+    var m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 18), mat(color, { rough: 0.7 }));
+    m.position.copy(a).addScaledVector(d, 0.5);
+    m.quaternion.setFromUnitVectors(V(0, 1, 0), d.clone().normalize());
+    return m;
+  }
+  function lcdTexture(gas, value, unit, status, alarm) {
+    var c = document.createElement('canvas');
+    c.width = 640; c.height = 340;
+    var x = c.getContext('2d');
+    x.fillStyle = '#08121a';
+    x.fillRect(0, 0, c.width, c.height);
+    x.textBaseline = 'middle';
+    var col = alarm ? '#ff5d5d' : '#58e08a';
+    x.fillStyle = col;
+    x.font = 'bold 46px "Courier New", monospace';
+    x.fillText(gas, 28, 52);
+    x.font = 'bold 130px "Courier New", monospace';
+    x.fillText(value, 28, 160);
+    x.font = 'bold 46px "Courier New", monospace';
+    x.fillText(unit, 420, 190);
+    x.fillStyle = alarm ? '#ff5d5d' : '#9aa4b8';
+    x.fillRect(28, 252, alarm ? 520 : 120, 14);
+    x.strokeStyle = '#9aa4b8';
+    x.strokeRect(28, 252, 560, 14);
+    x.fillStyle = col;
+    x.font = 'bold 40px "Courier New", monospace';
+    x.fillText(status, 28, 304);
+    var tex = new THREE.CanvasTexture(c);
+    tex.anisotropy = 4;
+    return tex;
+  }
+  function glow(obj, on) {
+    obj.traverse(function (o) {
+      if (o.isMesh && o.material && o.material.emissive) {
+        o.material.emissive.setHex(on ? 0x2a5fe0 : 0x000000);
+        o.material.emissiveIntensity = on ? 0.55 : 0;
+      }
+    });
+  }
+
+  /* ---------- vistas ---------- */
+  function makeView(name, pos, target, minD, maxD, zoomAspect) {
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(30, 1, 0.1, 160);
+    camera.position.copy(pos);
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.copy(target);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.enablePan = false;
+    controls.minDistance = minD;
+    controls.maxDistance = maxD;
+    controls.autoRotateSpeed = 2.0;
+    controls.update();
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8a94a8, 0.95));
+    var key = new THREE.DirectionalLight(0xffffff, 0.75);
+    key.position.set(7, 10, 9);
+    scene.add(key);
+    var fill = new THREE.DirectionalLight(0xdfe8ff, 0.35);
+    fill.position.set(-8, -3, 6);
+    scene.add(fill);
+    var g = document.createElementNS(NS, 'g');
+    wires.appendChild(g);
+    return { name: name, scene: scene, camera: camera, controls: controls, home: { pos: pos.clone(), target: target.clone() },
+      parts: {}, defs: [], g: g, zoomAspect: zoomAspect };
+  }
+  var dv = makeView('device', V(15, 3, 36), V(0, -2.3, 0.8), 10, 70, 0.62);
+  var wv = makeView('worn', V(1.2, 3.2, 22), V(0.8, -0.2, 0), 4, 40, 2.0);
+
+  function part(view, key, pos) {
+    var g = new THREE.Group();
+    g.position.copy(pos);
+    g.userData = { base: pos.clone(), dir: V(0, 0, 0) };
+    view.scene.add(g);
+    view.parts[key] = g;
+    return g;
+  }
+
+  var STEEL = 0xb4bccb, STEEL_D = 0x6b7487;
+
+  /* ---------- sonda en varilla (se usa en las dos vistas) ---------- */
+  function buildProbe(mk) {
+    var g;
+    g = mk('gland', 3.6);
+    put(g, cyl(0.2, 0.3, 0x3b4252, { edges: true }), 0, 0, 0);
+    put(g, cyl(0.27, 0.1, 0x56607a, { seg: 6, edges: true }), 0, -0.08, 0);
+
+    g = mk('grip', 2.95);
+    put(g, cyl(0.32, 1.0, 0x23272f, { edges: true }), 0, 0, 0);
+    [-0.3, -0.15, 0, 0.15, 0.3].forEach(function (y) {
+      put(g, cyl(0.35, 0.05, 0x3a404c), 0, y, 0);
+    });
+
+    [['seg1', 1.8], ['seg2', 0.2], ['seg3', -1.4]].forEach(function (s) {
+      g = mk(s[0], s[1]);
+      put(g, cyl(0.17, 1.3, STEEL, { metal: 0.4, edges: true }), 0, 0, 0);
+      put(g, cyl(0.18, 0.03, 0x2a303d), 0, 0.4, 0);
+      put(g, cyl(0.18, 0.03, 0x2a303d), 0, -0.4, 0);
+    });
+    [['coup1', 1.0], ['coup2', -0.6], ['coup3', -2.2]].forEach(function (s) {
+      g = mk(s[0], s[1]);
+      put(g, cyl(0.24, 0.3, STEEL_D, { metal: 0.3, edges: true }), 0, 0, 0);
+    });
+
+    g = mk('head', -3.05);
+    put(g, cyl(0.4, 1.4, 0x8a93a6, { metal: 0.5, opacity: 0.4, edges: true }), 0, 0, 0);
+    put(g, cyl(0.43, 0.12, STEEL_D, { metal: 0.4 }), 0, 0.64, 0);
+    put(g, cyl(0.43, 0.12, STEEL_D, { metal: 0.4 }), 0, -0.64, 0);
+    [-0.2, 0, 0.2].forEach(function (x) {
+      put(g, box(0.1, 0.6, 0.04, 0x20242c, { edges: false }), x, 0, 0.405);
+    });
+
+    g = mk('module', -3.1);
+    put(g, cyl(0.26, 0.9, 0xe9a21b, { edges: true }), 0, 0, 0);
+    put(g, cyl(0.2, 0.1, 0x20242c), 0, 0.5, 0);
+
+    g = mk('tip', -4.0);
+    put(g, cyl(0.32, 0.4, STEEL_D, { metal: 0.3, edges: true }), 0, 0, 0);
+    put(g, cyl(0.26, 0.05, 0xe6e9f0), 0, -0.2, 0);
+
+    g = mk('cable', 0.15);
+    put(g, cyl(0.05, 6.9, 0xff7a1a, { seg: 12 }), 0, 0, 0);
+  }
+
+  /* =====================================================
+     VISTA 1: DISPOSITIVO EXPLOSIONADO
+     ===================================================== */
+  buildProbe(function (key, y) { return part(dv, key, V(0, y, 0)); });
+
+  // transmisor: carcasa, módulo de circuito y tapa con pantalla
+  var gray = 0x8d96a8;
+  var txBase = part(dv, 'txBase', V(0, 5.0, 0));
+  put(txBase, box(2.0, 2.6, 0.12, gray), 0, 0, -0.3);
+  put(txBase, box(2.0, 0.12, 0.5, gray), 0, 1.24, -0.05);
+  put(txBase, box(2.0, 0.12, 0.5, gray), 0, -1.24, -0.05);
+  put(txBase, box(0.12, 2.36, 0.5, gray), -0.94, 0, -0.05);
+  put(txBase, box(0.12, 2.36, 0.5, gray), 0.94, 0, -0.05);
+  [-1, 1].forEach(function (sx) {
+    put(txBase, box(0.4, 0.4, 0.08, gray), sx * 1.2, 1.0, -0.32);
+    put(txBase, box(0.4, 0.4, 0.08, gray), sx * 1.2, -1.0, -0.32);
+  });
+
+  var txPcb = part(dv, 'txPcb', V(0, 5.0, 0.0));
+  put(txPcb, box(1.7, 2.2, 0.05, 0x2f9e5a), 0, 0, 0);
+  put(txPcb, box(1.5, 0.9, 0.08, 0x0e1119), 0, 0.55, 0.065);
+  [[-0.4, -0.2, 0.5, 0.4], [0.35, -0.3, 0.45, 0.4]].forEach(function (c) {
+    put(txPcb, box(c[2], c[3], 0.08, 0x151a25), c[0], c[1], 0.06);
+  });
+  for (var t = 0; t < 5; t++) {
+    put(txPcb, box(0.2, 0.28, 0.12, 0xe08a12), -0.6 + t * 0.3, -0.8, 0.08);
+  }
+
+  var txCover = part(dv, 'txCover', V(0, 5.0, 0.38));
+  put(txCover, box(2.0, 2.6, 0.12, 0xaab2c2), 0, 0, 0);
+  put(txCover, box(1.7, 1.1, 0.02, 0x14171d, { edges: false }), 0, 0.5, 0.062);
+  put(txCover, new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.85), new THREE.MeshBasicMaterial({ map: lcdTexture('H2S', '0.0', 'ppm', 'NORMAL', false) })), 0, 0.5, 0.075);
+  var ledG = cyl(0.07, 0.04, 0x2fd16b, { axis: 'z' });
+  ledG.material = new THREE.MeshBasicMaterial({ color: 0x2fd16b });
+  put(txCover, ledG, -0.6, -0.4, 0.07);
+  var ledA = cyl(0.07, 0.04, 0xf5a524, { axis: 'z' });
+  ledA.material = new THREE.MeshBasicMaterial({ color: 0xf5a524 });
+  put(txCover, ledA, -0.35, -0.4, 0.07);
+  [0, 1, 2].forEach(function (i) {
+    put(txCover, cyl(0.12, 0.06, 0x454b58, { axis: 'z', edges: true }), -0.5 + i * 0.5, -0.9, 0.08);
+  });
+
+  // direcciones de explosión
+  var dirs = {
+    txBase: V(0, 0, 0), txPcb: V(0, 0, 1.7), txCover: V(0, 0, 3.2),
+    gland: V(0, -0.4, 0), grip: V(0, -0.9, 0), seg1: V(0, -1.5, 0), coup1: V(0, -2.0, 0),
+    seg2: V(0, -2.7, 0), coup2: V(0, -3.2, 0), seg3: V(0, -3.9, 0), coup3: V(0, -4.4, 0),
+    head: V(0, -5.3, 0), module: V(2.3, -5.3, 0), tip: V(0, -6.6, 0), cable: V(0, 0, 0)
+  };
+  Object.keys(dirs).forEach(function (k) { dv.parts[k].userData.dir.copy(dirs[k]); });
+
+  function tag(kind, text) {
+    return '<small><i class="tg ' + (kind === 'doc' ? 'doc">ficha' : '">concepto') + '</i>' + text + '</small>';
+  }
+  function lcl(view, key, p) {
+    return function () {
+      var g = view.parts[key];
+      g.updateWorldMatrix(true, false);
+      return g.localToWorld(V(p[0], p[1], p[2]));
+    };
+  }
+  var dvDefs = [
+    { side: 'r', t: 'Tapa con pantalla LCD', s: tag('doc', 'Pantalla gráfica'), key: 'txCover', p: [0.6, 0.7, 0.08] },
+    { side: 'r', t: 'Módulo de circuito', s: tag('doc', 'Se puede extraer para mantenimiento'), key: 'txPcb', p: [-0.5, -0.5, 0.06] },
+    { side: 'r', t: 'Carcasa del transmisor', s: tag('doc', 'Alimentación de 12 V dc'), key: 'txBase', p: [0.98, 0.2, -0.05] },
+    { side: 'r', t: 'Prensaestopas', s: tag('doc', 'Salida 4–20 mA, 0,4–2 V o 5–15 Hz'), key: 'gland', p: [0.2, 0, 0] },
+    { side: 'r', t: 'Módulo de gas enchufable', s: tag('doc', 'Electroquímico, precalibrado, cambio rápido'), key: 'module', p: [0.26, 0.1, 0] },
+    { side: 'l', t: 'Empuñadura', s: tag('con', 'Para sujetar y guiar la sonda'), key: 'grip', p: [-0.32, 0.2, 0] },
+    { side: 'l', t: 'Varilla extensible', s: tag('con', 'Tramos unidos con acopladores'), key: 'seg2', p: [0, 0.3, 0.17] },
+    { side: 'l', t: 'Cable de señal', s: tag('con', 'Va por dentro de la varilla'), key: 'cable', p: [0, 0, 0], custom: true },
+    { side: 'l', t: 'Cabezal de sensado remoto', s: tag('doc', 'Opción en carcasa metálica robusta'), key: 'head', p: [0, 0.3, 0.42] },
+    { side: 'l', t: 'Punta con filtro', s: tag('con', 'Deja entrar el gas al sensor'), key: 'tip', p: [0.25, -0.1, 0.1] }
+  ];
+  dvDefs.forEach(function (d) {
+    d.target = dv.parts[d.key];
+    if (d.custom) {
+      d.anchor = function () {
+        var c = dv.parts.cable;
+        c.updateWorldMatrix(true, false);
+        var half = 6.9 * c.scale.y / 2;
+        return V(0.05, c.position.y - half * 0.55, 0.05);
+      };
+    } else {
+      d.anchor = lcl(dv, d.key, d.p);
+    }
+    d.on = function () { glow(d.target, true); };
+    d.off = function () { glow(d.target, false); };
+  });
+  dv.defs = dvDefs;
+
+  /* =====================================================
+     VISTA 2: USO EN UN BARRENO
+     ===================================================== */
+  var W = wv.scene;
+
+  // macizo rocoso en corte (mitad trasera) con estratos
+  var rock = new THREE.Group();
+  W.add(rock);
+  put(rock, box(9, 1.8, 3, 0x8b8f99, { edgeStrength: 0.2 }), -4.5, 2.1, -1.5);
+  put(rock, box(9, 2.4, 3, 0x5b4b3a, { edgeStrength: 0.2 }), -4.5, 0, -1.5);
+  put(rock, box(9, 1.8, 3, 0x777c87, { edgeStrength: 0.2 }), -4.5, -2.1, -1.5);
+  var holeBand = box(6.4, 1.1, 0.02, 0x050608, { edges: false });
+  put(rock, holeBand, -3.2, 0, 0.011);
+  var ground = box(26, 0.2, 8, 0xa7aebb, { edgeStrength: 0.15 });
+  put(W, ground, 2, -3.1, -0.6);
+
+  // sonda dentro del barreno (la sonda se construye vertical y se gira)
+  var probe = new THREE.Group();
+  W.add(probe);
+  buildProbe(function (key, y) {
+    var g = new THREE.Group();
+    g.position.set(0, y, 0);
+    probe.add(g);
+    probe.userData[key] = g;
+    return g;
+  });
+  probe.rotation.z = -Math.PI / 2;
+  probe.position.set(-1.0, 0, 0.14);
+
+  // gas acumulado en el barreno
+  var gasMat = new THREE.MeshBasicMaterial({ color: 0xe5484d, transparent: true, opacity: 0.55, depthWrite: false });
+  var gasG = new THREE.Group();
+  [[-6.0, 0.15, 0.08, 0.1], [-5.8, -0.3, 0.12, 0.08], [-5.5, 0.35, 0.06, 0.09], [-6.1, -0.1, 0.15, 0.07],
+   [-5.2, -0.38, 0.1, 0.07], [-5.0, 0.4, 0.14, 0.08], [-4.6, -0.4, 0.07, 0.06], [-4.3, 0.42, 0.1, 0.07],
+   [-5.6, 0.0, 0.2, 0.06], [-4.9, 0.0, 0.25, 0.05]].forEach(function (p) {
+    var s = new THREE.Mesh(new THREE.SphereGeometry(p[3], 14, 10), gasMat);
+    s.position.set(p[0], p[1], p[2]);
+    gasG.add(s);
+  });
+  W.add(gasG);
+
+  // transmisor en el extremo exterior de la varilla
+  var tx = new THREE.Group();
+  tx.position.set(4.3, 0, 0.14);
+  W.add(tx);
+  put(tx, box(2.6, 2.0, 0.8, gray), 0, 0, 0);
+  put(tx, cyl(0.22, 0.4, 0x3b4252, { axis: 'x', edges: true }), -1.5, 0, 0);
+  put(tx, box(2.0, 1.1, 0.02, 0x14171d, { edges: false }), 0.1, 0.2, 0.405);
+  var wornTex = lcdTexture('H2S', '12.4', 'ppm', 'ALARMA', true);
+  put(tx, new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.0), new THREE.MeshBasicMaterial({ map: wornTex })), 0.1, 0.2, 0.42);
+  var ledRw = cyl(0.08, 0.04, 0xe5484d, { axis: 'z' });
+  ledRw.material = new THREE.MeshBasicMaterial({ color: 0xe5484d });
+  put(tx, ledRw, -0.9, -0.55, 0.41);
+  [0, 1, 2].forEach(function (i) {
+    put(tx, cyl(0.13, 0.06, 0x454b58, { axis: 'z', edges: true }), -0.2 + i * 0.5, -0.65, 0.42);
+  });
+
+  // mano y brazo que sostienen la empuñadura
+  W.add(limb(V(5.4, -2.9, 2.4), V(2.0, -0.2, 0.4), 0.34, 0x3b6ea8));
+  put(W, sph(0.42, 0xff7a1a), 1.95, -0.1, 0.38);
+
+  // perforadora en reposo
+  var drill = new THREE.Group();
+  drill.position.set(8.6, -2.35, 0.9);
+  W.add(drill);
+  put(drill, box(2.4, 1.1, 1.0, 0xe08a12), 0, 0, 0);
+  put(drill, box(0.5, 0.7, 0.3, 0x2b2f38), 0.4, 0.85, 0);
+  put(drill, cyl(0.12, 2.6, STEEL, { axis: 'x', metal: 0.4 }), -2.4, -0.2, 0);
+  put(drill, cyl(0.24, 0.3, STEEL_D, { axis: 'x', metal: 0.3 }), -3.8, -0.2, 0);
+
+  var wvDefs = [
+    { side: 'l', t: 'Roca y veta', s: tag('con', 'Corte del macizo, simplificado'), anchor: function () { return V(-7.5, 1.9, 0.01); }, target: null },
+    { side: 'l', t: 'Barreno', s: tag('con', 'Perforación hecha con el taladro'), anchor: function () { return V(-2.0, -0.5, 0.02); }, target: null },
+    { side: 'l', t: 'Gas acumulado', s: tag('con', 'Lo que busca la sonda'), anchor: function () { return V(-5.9, 0.2, 0.1); }, target: null,
+      on: function () { gasMat.opacity = 0.95; }, off: function () { gasMat.opacity = 0.55; } },
+    { side: 'l', t: 'Cabezal de sensado remoto', s: tag('doc', 'Mide dentro del barreno'), anchor: function () { probe.updateWorldMatrix(true, true); return probe.localToWorld(V(0, -3.05, 0.42)); }, target: probe.userData.head },
+    { side: 'r', t: 'Varilla extensible', s: tag('con', 'Llega al fondo sin entrar la mano'), anchor: function () { probe.updateWorldMatrix(true, true); return probe.localToWorld(V(0, 0.2, 0.18)); }, target: probe.userData.seg2 },
+    { side: 'r', t: 'Transmisor con pantalla', s: tag('doc', 'Muestra la lectura (valor de ejemplo)'), anchor: function () { return V(4.9, 0.45, 0.56); }, target: tx },
+    { side: 'r', t: 'Empuñadura', s: tag('con', 'Se agarra fuera del barreno'), anchor: function () { probe.updateWorldMatrix(true, true); return probe.localToWorld(V(0, 2.95, 0.33)); }, target: probe.userData.grip },
+    { side: 'r', t: 'Perforadora en reposo', s: tag('con', 'Con barra y broca retiradas'), anchor: function () { return V(8.6, -2.35, 1.42); }, target: drill }
+  ];
+  wvDefs.forEach(function (d) {
+    if (d.target && !d.on) {
+      d.on = function () { glow(d.target, true); };
+      d.off = function () { glow(d.target, false); };
+    }
+  });
+  wv.defs = wvDefs;
+
+  /* ---------- etiquetas ---------- */
+  [dv, wv].forEach(function (view) {
+    view.defs.forEach(function (d) {
+      var el = document.createElement('div');
+      el.className = 'lb ' + d.side;
+      el.innerHTML = '<span>' + d.t + '</span>' + d.s;
+      stage.appendChild(el);
+      d.el = el;
+      d.line = document.createElementNS(NS, 'line');
+      d.dot = document.createElementNS(NS, 'circle');
+      d.dot.setAttribute('r', '3');
+      view.g.appendChild(d.line);
+      view.g.appendChild(d.dot);
+      d.sticky = false;
+      function on() { if (d.on) d.on(); el.classList.add('on'); }
+      function off() { if (!d.sticky) { if (d.off) d.off(); el.classList.remove('on'); } }
+      el.addEventListener('mouseenter', on);
+      el.addEventListener('mouseleave', off);
+      el.addEventListener('click', function () {
+        d.sticky = !d.sticky;
+        if (d.sticky) on(); else { if (d.off) d.off(); el.classList.remove('on'); }
+      });
+    });
+  });
+
+  /* ---------- estado ---------- */
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var curT = reduce ? 1 : 0;
+  var goalT = 1;
+  var dragging = false;
+  var slider = document.getElementById('ex');
+  var toggle = document.getElementById('toggle');
+  var spin = document.getElementById('spin');
+  var current = dv;
+  slider.value = curT;
+
+  /* Giro automático: cada vuelta completa de la vista del dispositivo alterna entre explotado y ensamblado. */
+  var lastAz = 0;
+  var turned = 0;
+  var TWO_PI = Math.PI * 2;
+
+  function setGoal(v) {
+    goalT = v;
+    toggle.textContent = goalT > 0.5 ? 'Ensamblar' : 'Explotar';
+  }
+
+  function trackTurn() {
+    var az = current.controls.getAzimuthalAngle();
+    var d = az - lastAz;
+    if (d > Math.PI) d -= TWO_PI;
+    if (d < -Math.PI) d += TWO_PI;
+    lastAz = az;
+    if (current !== dv || !dv.controls.autoRotate || dragging) return;
+    turned += Math.abs(d);
+    if (turned >= TWO_PI) {
+      turned -= TWO_PI;
+      setGoal(goalT > 0.5 ? 0 : 1);
+    }
+  }
+
+  // el cable siempre une el prensaestopas con el cabezal
+  var CABLE_TOP = 3.6, CABLE_L0 = 6.9;
+  function applyT(t) {
+    var e = t * t * (3 - 2 * t);
+    Object.keys(dv.parts).forEach(function (k) {
+      if (k === 'cable') return;
+      var g = dv.parts[k];
+      g.position.copy(g.userData.base).addScaledVector(g.userData.dir, e);
+    });
+    var headTop = -3.05 + 0.7 - 5.3 * e;
+    var len = CABLE_TOP - headTop;
+    var cab = dv.parts.cable;
+    cab.scale.y = len / CABLE_L0;
+    cab.position.y = (CABLE_TOP + headTop) / 2;
+  }
+  slider.addEventListener('input', function () {
+    dragging = true;
+    curT = parseFloat(slider.value);
+    setGoal(curT);
+  });
+  slider.addEventListener('change', function () { dragging = false; });
+  toggle.addEventListener('click', function () {
+    setGoal(goalT > 0.5 ? 0 : 1);
+  });
+  spin.addEventListener('click', function () {
+    current.controls.autoRotate = !current.controls.autoRotate;
+    spin.setAttribute('aria-pressed', String(current.controls.autoRotate));
+    spin.textContent = current.controls.autoRotate ? 'Giro automático' : 'Giro detenido';
+  });
+  function go(view, pos, target) {
+    view.camera.position.copy(pos);
+    view.controls.target.copy(target);
+    view.controls.update();
+  }
+  document.getElementById('reset').addEventListener('click', function () { go(dv, dv.home.pos, dv.home.target); });
+  document.getElementById('hole').addEventListener('click', function () { go(wv, V(-2.5, 1.8, 9.5), V(-4.2, 0, 0.1)); });
+  document.getElementById('overview').addEventListener('click', function () { go(wv, wv.home.pos, wv.home.target); });
+  var lblBtn = document.getElementById('lbl');
+  lblBtn.addEventListener('click', function () {
+    var hidden = app.classList.toggle('hide-labels');
+    lblBtn.setAttribute('aria-pressed', String(!hidden));
+  });
+
+  function setView(view) {
+    current = view;
+    app.dataset.view = view.name;
+    document.getElementById('tab-device').setAttribute('aria-selected', String(view === dv));
+    document.getElementById('tab-worn').setAttribute('aria-selected', String(view === wv));
+    [dv, wv].forEach(function (v) {
+      var act = v === view;
+      v.controls.enabled = act;
+      v.controls.autoRotate = act && !reduce;
+      v.g.style.display = act ? '' : 'none';
+      v.defs.forEach(function (d) { d.el.style.display = act ? '' : 'none'; });
+    });
+    spin.setAttribute('aria-pressed', String(!reduce));
+    spin.textContent = reduce ? 'Giro detenido' : 'Giro automático';
+    lastAz = current.controls.getAzimuthalAngle();
+    turned = 0;
+    resize();
+  }
+  document.getElementById('tab-device').addEventListener('click', function () { setView(dv); });
+  document.getElementById('tab-worn').addEventListener('click', function () { setView(wv); });
+
+  function resize() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h);
+    [dv, wv].forEach(function (v) {
+      v.camera.aspect = w / h;
+      v.camera.zoom = Math.min(1, (w / h) / v.zoomAspect);
+      v.camera.updateProjectionMatrix();
+    });
+  }
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+  window.addEventListener('resize', resize);
+
+  /* ---------- distribución de etiquetas ---------- */
+  function layout(view) {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    var lw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lw')) || 214;
+    ['l', 'r'].forEach(function (side) {
+      var items = view.defs.filter(function (d) { return d.side === side; });
+      items.forEach(function (d) {
+        var v = d.anchor().project(view.camera);
+        d.ax = (v.x * 0.5 + 0.5) * w;
+        d.ay = (-v.y * 0.5 + 0.5) * h;
+        d.hgt = d.el.offsetHeight;
+      });
+      items.sort(function (a, b) { return a.ay - b.ay; });
+      var prev = 6;
+      items.forEach(function (d) {
+        var y = Math.max(d.ay - d.hgt / 2, prev);
+        d.ly = y;
+        prev = y + d.hgt + 6;
+      });
+      var over = prev - 6 - (h - 6);
+      if (over > 0) items.forEach(function (d) { d.ly = Math.max(6, d.ly - over); });
+      items.forEach(function (d) {
+        d.el.style.transform = 'translateY(' + d.ly.toFixed(1) + 'px)';
+        var x1 = side === 'l' ? 12 + lw : w - 12 - lw;
+        var y1 = d.ly + d.hgt / 2;
+        d.line.setAttribute('x1', x1.toFixed(1));
+        d.line.setAttribute('y1', y1.toFixed(1));
+        d.line.setAttribute('x2', d.ax.toFixed(1));
+        d.line.setAttribute('y2', d.ay.toFixed(1));
+        d.dot.setAttribute('cx', d.ax.toFixed(1));
+        d.dot.setAttribute('cy', d.ay.toFixed(1));
+      });
+    });
+  }
+
+  function frame() {
+    requestAnimationFrame(frame);
+    if (!dragging && Math.abs(goalT - curT) > 0.0005) {
+      curT += (goalT - curT) * (reduce ? 1 : 0.07);
+      slider.value = curT.toFixed(3);
+    }
+    applyT(curT);
+    current.controls.update();
+    trackTurn();
+    renderer.render(current.scene, current.camera);
+    if (!app.classList.contains('hide-labels')) layout(current);
+  }
+
+  setView(dv);
+  frame();
+})();
+</script>
+</body>
+</html>
