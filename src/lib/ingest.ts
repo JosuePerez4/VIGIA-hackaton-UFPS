@@ -1,7 +1,7 @@
 import { getPool } from './db';
 
 const MAX_ROWS = 1000;
-const GASES = ['CH4', 'CO', 'O2', 'H2S', 'CO2', 'NO2', 'TEMP', 'AIR'];
+const GASES = ['CH4', 'CO', 'O2', 'H2S', 'CO2', 'NO2', 'TEMP', 'AIR', 'EQUIPO'];
 const STATION = /^EST-\d{2}$/;
 const WORKER = /^MIN-\d{2}$/;
 
@@ -13,6 +13,8 @@ export interface AlertRow {
   gas: string;
   level: number;
   channel: 'rápido' | 'lento';
+  kind: 'gas' | 'equipo';
+  detail: string;
   value: number;
   status: 'activa' | 'escalada' | 'resuelta';
   acknowledged: boolean;
@@ -102,15 +104,15 @@ export async function writeBatch(batch: IngestBatch) {
 
     if (batch.alerts.length) {
       await client.query(
-        `INSERT INTO alerts (session_id, alert_no, sim_elapsed_s, sim_clock, station_id, gas, level, channel, value, status, acknowledged, updated_at)
-         SELECT $1::uuid, x.alert_no, x.sim_elapsed_s, x.sim_clock, x.station_id, x.gas, x.level, x.channel, x.value, x.status, x.acknowledged, now()
-         FROM jsonb_to_recordset($2::jsonb) AS x(alert_no int, sim_elapsed_s int, sim_clock text, station_id text, gas text, level smallint, channel text, value double precision, status text, acknowledged boolean)
+        `INSERT INTO alerts (session_id, alert_no, sim_elapsed_s, sim_clock, station_id, gas, level, channel, value, status, acknowledged, kind, detail, updated_at)
+         SELECT $1::uuid, x.alert_no, x.sim_elapsed_s, x.sim_clock, x.station_id, x.gas, x.level, x.channel, x.value, x.status, x.acknowledged, x.kind, x.detail, now()
+         FROM jsonb_to_recordset($2::jsonb) AS x(alert_no int, sim_elapsed_s int, sim_clock text, station_id text, gas text, level smallint, channel text, value double precision, status text, acknowledged boolean, kind text, detail text)
          ON CONFLICT (session_id, alert_no) DO UPDATE SET
            status = EXCLUDED.status, value = EXCLUDED.value, level = EXCLUDED.level,
            channel = EXCLUDED.channel, acknowledged = EXCLUDED.acknowledged, updated_at = now()`,
         [batch.sessionId, JSON.stringify(batch.alerts.map((a) => ({
           alert_no: a.alertNo, sim_elapsed_s: a.simElapsedS, sim_clock: a.simClock, station_id: a.stationId,
-          gas: a.gas, level: a.level, channel: a.channel, value: a.value, status: a.status, acknowledged: a.acknowledged,
+          gas: a.gas, level: a.level, channel: a.channel, value: a.value, status: a.status, acknowledged: a.acknowledged, kind: a.kind, detail: a.detail,
         })))],
       );
     }

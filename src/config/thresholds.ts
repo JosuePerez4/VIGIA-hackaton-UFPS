@@ -51,3 +51,20 @@ export function levelFor(value: number, threshold: GasThreshold): Level {
   }
   return value <= level3 ? 3 : value <= level2 ? 2 : value <= level1 ? 1 : 0;
 }
+
+/** Las alertas de equipo (falla de un dispositivo o corte de energía) no tienen umbral de gas. */
+export const EQUIPMENT_THRESHOLD: GasThreshold = {
+  label: 'Equipo',
+  unit: '',
+  decimals: 0,
+  direction: 'above',
+  level1: 0,
+  level2: 0,
+  level3: 0,
+  fastRate: 0,
+};
+
+/** Umbral de un gas, o el neutro para alertas de equipo. */
+export function gasThreshold(gas: GasKey | 'EQUIPO', thresholds: Record<GasKey, GasThreshold>): GasThreshold {
+  return gas === 'EQUIPO' ? EQUIPMENT_THRESHOLD : thresholds[gas];
+}

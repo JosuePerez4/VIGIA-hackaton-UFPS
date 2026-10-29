@@ -4,6 +4,8 @@ import type { GasKey } from '@/config/thresholds';
 export const TIME_SCALE = 3;
 
 export type ScenarioId =
+  | 'falla-dispositivo'
+  | 'corte-luz'
   | 'normal'
   | 'fuga-metano'
   | 'aumento-co'
@@ -120,7 +122,36 @@ export const SCENARIOS: ScenarioDef[] = [
       { at: 108, text: (t) => `O₂ alcanza Nivel 3 en ${t}.`, tone: 3 },
     ],
   },
+  {
+    id: 'falla-dispositivo',
+    name: 'Falla de dispositivo',
+    description: 'Un sensor fijo y el MX6 de un minero dejan de enviar datos. Quedan en rojo y generan alerta.',
+    shortcut: '8',
+    needsTarget: true,
+    steps: [
+      { at: 0, text: (t) => `Inicio de escenario: operación normal alrededor de ${t}.`, tone: 0 },
+      { at: 60, text: (t) => `Falla: el sensor de ${t} dejó de enviar datos.`, tone: 2 },
+      { at: 60, text: () => 'Falla del MX6 del minero más cercano.', tone: 2 },
+    ],
+  },
+  {
+    id: 'corte-luz',
+    name: 'Corte de luz',
+    description: 'Se va la energía de la mina. Las estaciones pasan a batería, se marcan en otro color y empiezan a descargarse.',
+    shortcut: '9',
+    needsTarget: false,
+    steps: [
+      { at: 0, text: () => 'Inicio de escenario: operación normal con energía de red.', tone: 0 },
+      { at: 40, text: () => 'Corte de energía: las estaciones pasan a batería.', tone: 2 },
+    ],
+  },
 ];
+
+/** Segundos de escenario en que ocurre el evento de equipo. */
+export const DEVICE_EVENT_S: Partial<Record<ScenarioId, number>> = {
+  'falla-dispositivo': 60,
+  'corte-luz': 40,
+};
 
 export const SCENARIO_BY_ID: Record<ScenarioId, ScenarioDef> = Object.fromEntries(
   SCENARIOS.map((s) => [s.id, s]),

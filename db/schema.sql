@@ -63,3 +63,7 @@ CREATE INDEX IF NOT EXISTS alerts_by_session_time ON alerts (session_id, sim_ela
 CREATE INDEX IF NOT EXISTS timeline_by_session_time ON timeline_events (session_id, sim_elapsed_s);
 CREATE INDEX IF NOT EXISTS station_readings_by_station ON station_readings (session_id, station_id, sim_elapsed_s);
 CREATE INDEX IF NOT EXISTS worker_readings_by_station ON worker_readings (session_id, station_id, sim_elapsed_s);
+
+-- Alertas de equipo (falla de dispositivo o corte de energía) y su descripción.
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'gas';
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS detail text NOT NULL DEFAULT '';

@@ -1,6 +1,6 @@
 import { DEFAULT_THRESHOLDS, GAS_ORDER, levelFor, type GasKey, type GasThreshold, type Level } from '@/config/thresholds';
 import { ADJACENCY, ENTRY_ID, LAST_CALIBRATION, NODE_BY_ID, STATION_IDS, WORKER_SEEDS, hopDistances } from './mine';
-import { SCENARIO_BY_ID, TIME_SCALE, gasEffect, type ScenarioId } from './scenarios';
+import { DEVICE_EVENT_S, SCENARIO_BY_ID, TIME_SCALE, gasEffect, type ScenarioId } from './scenarios';
 import { wetBulbFromTempRh } from './climate';
 import type {
   AlertRecord,
@@ -70,6 +70,8 @@ export interface TracePoint {
 }
 /** Segundos que tarda un minero en recorrer un tramo de galería. */
 const WALK_SECONDS = 10;
+/** Descarga de batería de una estación alimentada por batería, por segundo simulado. */
+const BATTERY_DRAIN_PER_S = 0.02;
 /** Los MX6 de los mineros se mantienen entre 90 % y 100 %. */
 const MX6_MIN_BATTERY = 90;
 
@@ -111,6 +113,8 @@ interface StationRuntime {
   factor: number;
   /** Humedad relativa (%) medida por el módulo de humedad de la estación. */
   rh: number;
+  onBattery: boolean;
+  online: boolean;
   battery: number;
   latencyMs: number;
   lastCalibration: string;
@@ -135,6 +139,7 @@ interface WorkerRuntime {
   prev: string | null;
   progress: number;
   samples: number;
+  failed: boolean;
   exposure: Record<GasKey, number>;
 }
 
@@ -143,6 +148,7 @@ export class SimEngine {
   private rng!: Rng;
   private elapsed = 0;
   private startSeconds = DEFAULT_START_SECONDS;
+  private deviceEventDone = false;
   private traces: Record<string, Record<GasKey, TracePoint[]>> = {};
   private scenario: ScenarioId = 'normal';
   private target = 'EST-08';
@@ -174,6 +180,7 @@ export class SimEngine {
     this.elapsed = 0;
     this.startSeconds = startSeconds;
     this.traces = {};
+    this.deviceEventDone = false;
     this.scenario = scenario;
     this.target = target;
     this.hopsTarget = hopDistances(target);
@@ -189,6 +196,8 @@ export class SimEngine {
         y: node.y,
         factor: 0.9 + this.rng.next() * 0.2,
         rh: 0,
+        onBattery: false,
+        online: true,
         battery: 100,
         latencyMs: 60,
         lastCalibration: LAST_CALIBRATION[index % LAST_CALIBRATION.length],
@@ -224,6 +233,7 @@ export class SimEngine {
         prev: null,
         progress: this.rng.next() * 0.5,
         samples: 0,
+        failed: false,
         exposure: gasRecord(() => 0),
       };
     });
@@ -266,7 +276,8 @@ export class SimEngine {
       area: st.area,
       x: st.x,
       y: st.y,
-      online: true,
+      online: st.online,
+      onBattery: st.onBattery,
       battery: Math.round(st.battery * 10) / 10,
       lastCalibration: st.lastCalibration,
       latencyMs: st.latencyMs,
@@ -303,6 +314,7 @@ export class SimEngine {
         reading: gasRecord((g) => linked.raw[g]),
         twa: gasRecord((g) => w.exposure[g] / seconds),
         samples: w.samples,
+        failed: w.failed,
       };
     });
 
@@ -334,6 +346,7 @@ export class SimEngine {
   private tick() {
     this.elapsed += 1;
     this.fireScenarioSteps();
+    this.deviceEvents();
     this.sample();
     this.analyze();
     this.updateAlerts();
@@ -348,6 +361,8 @@ export class SimEngine {
     for (const st of this.stations) {
       const hopsFromTarget = this.hopsTarget[st.id] ?? 99;
       const hopsFromEntry = this.hopsEntry[st.id] ?? 99;
+      if (st.onBattery) st.battery = Math.max(0, st.battery - BATTERY_DRAIN_PER_S);
+      if (!st.online) continue;
       for (const gas of GAS_ORDER) {
         const noise = (this.rng.next() * 2 - 1) * NOISE[gas];
         const effect = gasEffect(
@@ -439,6 +454,8 @@ export class SimEngine {
           elapsed: this.elapsed,
           stationId: st.id,
           gas,
+          kind: 'gas',
+          detail: '',
           level,
           value: st.avg[gas],
           channel,
@@ -470,7 +487,7 @@ export class SimEngine {
   private walk(w: WorkerRuntime) {
     w.battery = Math.max(MX6_MIN_BATTERY, w.battery - 0.003);
     const linked = this.linkedStation(w);
-    for (const gas of GAS_ORDER) w.exposure[gas] += linked.raw[gas];
+    if (!w.failed) for (const gas of GAS_ORDER) w.exposure[gas] += linked.raw[gas];
     w.samples += 1;
 
     w.progress += 1 / WALK_SECONDS;
@@ -521,6 +538,48 @@ export class SimEngine {
     if (drift < 0.3) this.queue = Math.min(4, this.queue + 1);
     else if (drift > 0.7) this.queue = Math.max(0, this.queue - 1);
     this.processingMs = Math.round(45 + this.rng.next() * 35);
+  }
+
+  /** Eventos de equipo: falla de un sensor y de un MX6, o corte de energía. */
+  private deviceEvents() {
+    const at = DEVICE_EVENT_S[this.scenario];
+    if (at === undefined || this.deviceEventDone || this.elapsed < at * TIME_SCALE) return;
+    this.deviceEventDone = true;
+    if (this.scenario === 'corte-luz') {
+      for (const st of this.stations) st.onBattery = true;
+      this.raiseEquipment(this.target, 'Corte de energía: estaciones en batería', 2);
+      return;
+    }
+    const station = this.stationById[this.target];
+    if (station) {
+      station.online = false;
+      this.raiseEquipment(station.id, `Falla del sensor ${station.id}: sin datos`, 2);
+    }
+    const worker = this.workers.find((w) => this.linkedStation(w).id === this.target) ?? this.workers[0];
+    if (worker) {
+      worker.failed = true;
+      this.raiseEquipment(this.target, `Falla del MX6 ${worker.mx6} (${worker.name})`, 2);
+    }
+  }
+
+  /** Registra una alerta de equipo (no es un gas). */
+  private raiseEquipment(stationId: string, detail: string, level: 1 | 2 | 3) {
+    this.alerts.push({
+      id: ++this.alertId,
+      time: clockFromElapsed(this.elapsed, this.startSeconds),
+      elapsed: this.elapsed,
+      kind: 'equipo',
+      detail,
+      stationId,
+      gas: 'EQUIPO',
+      level,
+      value: 0,
+      channel: 'lento',
+      status: 'activa',
+      acknowledged: false,
+    });
+    if (this.alerts.length > ALERT_LENGTH) this.alerts.shift();
+    this.pushTimeline(`${stationId} · ${detail}`, level);
   }
 
   private fireScenarioSteps() {

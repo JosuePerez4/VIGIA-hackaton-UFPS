@@ -25,6 +25,8 @@ export interface StationSnapshot {
   latencyMs: number;
   readings: Record<GasKey, GasReading>;
   level: Level;
+  /** Alimentada por batería (corte de energía). */
+  onBattery: boolean;
   /**
    * Clima de la estación. La humedad relativa la mide el módulo de humedad del Trolex Sentro 8;
    * la temperatura húmeda no la mide el dispositivo y se calcula a partir de temperatura y HR.
@@ -55,6 +57,8 @@ export interface WorkerSnapshot {
   twa: Record<GasKey, number>;
   /** Número de muestras enviadas por el MX6 en el turno. */
   samples: number;
+  /** El MX6 dejó de enviar datos. */
+  failed: boolean;
 }
 
 export interface AlertRecord {
@@ -62,8 +66,12 @@ export interface AlertRecord {
   time: string;
   /** Segundos desde el inicio del turno. */
   elapsed: number;
+  /** "gas": umbral de un gas. "equipo": falla de un dispositivo o corte de energía. */
+  kind: 'gas' | 'equipo';
+  /** Descripción para alertas de equipo. */
+  detail: string;
   stationId: string;
-  gas: GasKey;
+  gas: GasKey | 'EQUIPO';
   level: Level;
   value: number;
   channel: 'rápido' | 'lento';

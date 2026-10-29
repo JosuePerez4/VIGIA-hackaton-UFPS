@@ -70,6 +70,8 @@ export class SessionRecorder {
         gas: alert.gas,
         level: alert.level,
         channel: alert.channel,
+        kind: alert.kind,
+        detail: alert.detail,
         value: alert.value,
         status: alert.status,
         acknowledged: alert.acknowledged,
