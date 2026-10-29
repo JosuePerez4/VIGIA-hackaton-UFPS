@@ -2,10 +2,6 @@ import { connection } from 'next/server';
 import { getPool } from '@/lib/db';
 import { json } from '@/lib/api';
 
-/**
- * Salud del servicio. Responde 200 mientras la app esté arriba; la base de datos
- * se reporta aparte, para que un fallo de Neon no tumbe el servicio entero.
- */
 export async function GET() {
   await connection();
   const startedAt = Date.now();

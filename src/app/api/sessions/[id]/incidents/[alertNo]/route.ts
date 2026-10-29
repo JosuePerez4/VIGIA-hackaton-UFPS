@@ -2,10 +2,8 @@ import { connection } from 'next/server';
 import { isUuid, json, serverError } from '@/lib/api';
 import { getPool } from '@/lib/db';
 
-/** Ventana de contexto alrededor de la alerta, en segundos simulados. */
 const WINDOW_S = 120;
 
-/** Reporte de incidente: la alerta, lo que midió su estación antes y después, y quién estaba cerca. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string; alertNo: string }> }) {
   await connection();
   const { id, alertNo } = await params;

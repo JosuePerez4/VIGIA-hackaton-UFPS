@@ -59,7 +59,6 @@ const isInt = (v: unknown, min: number, max: number) => Number.isInteger(v) && (
 const isNum = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
 const isStr = (v: unknown, max = 200) => typeof v === 'string' && v.length > 0 && v.length <= max;
 
-/** Valida un lote y devuelve el error del primer registro inválido, o null si todo está bien. */
 export function validateBatch(body: unknown): string | null {
   if (!isObj(body)) return 'El cuerpo debe ser un objeto JSON';
   if (!isStr(body.sessionId, 36)) return 'sessionId es obligatorio';
@@ -93,10 +92,6 @@ export function validateBatch(body: unknown): string | null {
   return null;
 }
 
-/**
- * Escribe un lote en una transacción. Cada tabla usa una sola sentencia con jsonb_to_recordset;
- * las alertas se actualizan (upsert) porque cambian de estado y de valor a lo largo de su vida.
- */
 export async function writeBatch(batch: IngestBatch) {
   const client = await getPool().connect();
   try {

@@ -4,7 +4,6 @@ import { validateBatch, writeBatch, type IngestBatch } from '@/lib/ingest';
 
 const MAX_BODY_BYTES = 2_000_000;
 
-/** Recibe un lote del navegador y lo escribe en Neon. Idempotente: reenviar el mismo lote no duplica filas. */
 export async function POST(request: NextRequest) {
   if (!isWriteAuthorized(request)) return unauthorized();
 
@@ -26,7 +25,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** Traduce el JSON del navegador (camelCase) a los tipos internos. */
 function toBatch(body: Record<string, unknown>): IngestBatch {
   return {
     sessionId: body.sessionId as string,

@@ -1,6 +1,5 @@
 import type { GasKey } from '@/config/thresholds';
 
-/** Cada segundo simulado equivale a TIME_SCALE segundos de escenario: los eventos duran minutos, no segundos. */
 export const TIME_SCALE = 3;
 
 export type ScenarioId =
@@ -15,7 +14,6 @@ export type ScenarioId =
   | 'caida-oxigeno';
 
 export interface ScenarioStep {
-  /** Segundos desde el inicio del escenario. */
   at: number;
   text: (target: string) => string;
   tone: 0 | 1 | 2 | 3;
@@ -25,7 +23,6 @@ export interface ScenarioDef {
   id: ScenarioId;
   name: string;
   description: string;
-  /** Tecla de atajo durante la presentación. */
   shortcut: string;
   needsTarget: boolean;
   steps: ScenarioStep[];
@@ -147,7 +144,6 @@ export const SCENARIOS: ScenarioDef[] = [
   },
 ];
 
-/** Segundos de escenario en que ocurre el evento de equipo. */
 export const DEVICE_EVENT_S: Partial<Record<ScenarioId, number>> = {
   'falla-dispositivo': 60,
   'corte-luz': 40,
@@ -168,7 +164,6 @@ export interface EffectContext {
 const ramp = (t: number, start: number, span: number, amount: number) =>
   amount * Math.min(Math.max((t - start) / span, 0), 1);
 
-/** Aporte adicional de un escenario a un gas en una estación (se suma a la línea base). */
 export function gasEffect(ctx: EffectContext, gas: GasKey): number {
   const { scenario, hopsFromTarget: h, hopsFromEntry: e } = ctx;
   const t = ctx.elapsed / TIME_SCALE;
@@ -181,13 +176,11 @@ export function gasEffect(ctx: EffectContext, gas: GasKey): number {
   }
 
   if (scenario === 'alerta-en-trabajo') {
-    // Sube hasta Nivel 2 (1.5 % con la línea base) sin llegar a Nivel 3.
     const intensity = [1, 0.4, 0.1][h] ?? 0;
     if (gas === 'CH4') return intensity * ramp(t, 15 + h * 10, 60, 1.45);
   }
 
   if (scenario === 'caida-oxigeno') {
-    // Desplazamiento de gas: el O₂ cae en el punto y se atenúa hacia los vecinos. Sin llegar a 14 %.
     const intensity = [1, 0.5, 0.2][h] ?? 0;
     const delay = h * 12;
     if (gas === 'O2') return -intensity * ramp(t, 15 + delay, 90, 6.0);

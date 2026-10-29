@@ -13,7 +13,6 @@ import type {
   WorkerSnapshot,
 } from './types';
 
-/** Línea base por gas (unidades del gas). */
 const BASELINE: Record<GasKey, number> = {
   CH4: 0.25,
   CO: 6,
@@ -25,7 +24,6 @@ const BASELINE: Record<GasKey, number> = {
   AIR: 1.1,
 };
 
-/** Cuánto varía la línea base entre estaciones (O₂ y temperatura casi no varían). */
 const VARIATION: Record<GasKey, number> = {
   CH4: 1,
   CO: 1,
@@ -39,7 +37,6 @@ const VARIATION: Record<GasKey, number> = {
 
 const stationBase = (gas: GasKey, factor: number) => BASELINE[gas] * (1 + (factor - 1) * VARIATION[gas]);
 
-/** Ruido de medición por gas. */
 const NOISE: Record<GasKey, number> = {
   CH4: 0.003,
   CO: 0.5,
@@ -51,16 +48,12 @@ const NOISE: Record<GasKey, number> = {
   AIR: 0.04,
 };
 
-/** Canal lento: promedio móvil de 40 s (dentro del rango de 30 a 45 s). */
 const SLOW_WINDOW = 40;
-/** Canal rápido: la tasa de cambio dC/dt se calcula sobre 2 s. */
 const FAST_LAG = 2;
 const SERIES_LENGTH = 300;
 const TIMELINE_LENGTH = 200;
 const ALERT_LENGTH = 300;
-/** Turno de referencia si no se indica otra hora: 14:20. */
 const DEFAULT_START_SECONDS = 14 * 3600 + 20 * 60;
-/** Historia por estación para los reportes: un punto cada 5 s, hasta unas 3 horas. */
 const TRACE_EVERY_S = 5;
 const TRACE_LENGTH = 2400;
 
@@ -68,11 +61,8 @@ export interface TracePoint {
   t: number;
   v: number;
 }
-/** Segundos que tarda un minero en recorrer un tramo de galería. */
 const WALK_SECONDS = 10;
-/** Descarga de batería de una estación alimentada por batería, por segundo simulado. */
 const BATTERY_DRAIN_PER_S = 0.02;
-/** Los MX6 de los mineros se mantienen entre 90 % y 100 %. */
 const MX6_MIN_BATTERY = 90;
 
 class Rng {
@@ -82,7 +72,6 @@ class Rng {
     this.state = seed >>> 0 || 1;
   }
 
-  /** mulberry32: determinista; mismo escenario = misma secuencia (demo repetible). */
   next(): number {
     this.state = (this.state + 0x6d2b79f5) | 0;
     let t = Math.imul(this.state ^ (this.state >>> 15), 1 | this.state);
@@ -111,7 +100,6 @@ interface StationRuntime {
   x: number;
   y: number;
   factor: number;
-  /** Humedad relativa (%) medida por el módulo de humedad de la estación. */
   rh: number;
   onBattery: boolean;
   online: boolean;
@@ -127,7 +115,6 @@ interface StationRuntime {
   level: Level;
 }
 
-/** Minero que camina por las galerías con su MX6. */
 interface WorkerRuntime {
   id: string;
   name: string;
@@ -174,7 +161,6 @@ export class SimEngine {
     this.reset('normal', this.target);
   }
 
-  /** Reinicia la mina con un escenario. */
   reset(scenario: ScenarioId, target: string, startSeconds = this.startSeconds) {
     this.rng = new Rng(this.seed);
     this.elapsed = 0;
@@ -209,7 +195,6 @@ export class SimEngine {
         gasChannel: gasRecord(() => null),
         level: 0,
       };
-      // Humedad relativa de la galería: en el rango típico de minas húmedas (≈ 74–82 %).
       station.rh = 78 + (station.factor - 1) * 40;
       for (const gas of GAS_ORDER) {
         const base = stationBase(gas, station.factor);
@@ -254,7 +239,6 @@ export class SimEngine {
     this.thresholds = thresholds;
   }
 
-  /** Avanza `seconds` segundos simulados y devuelve la foto completa del estado. */
   advance(seconds: number): MineSnapshot {
     for (let i = 0; i < seconds; i++) this.tick();
     return this.snapshot();
@@ -356,7 +340,6 @@ export class SimEngine {
     this.updateSystem();
   }
 
-  /** Lecturas crudas: línea base + ruido + aporte del escenario. */
   private sample() {
     for (const st of this.stations) {
       const hopsFromTarget = this.hopsTarget[st.id] ?? 99;
@@ -387,7 +370,6 @@ export class SimEngine {
     }
   }
 
-  /** Canal lento (promedio móvil), canal rápido (dC/dt) y nivel por gas y estación. */
   private analyze() {
     for (const st of this.stations) {
       for (const gas of GAS_ORDER) {
@@ -476,14 +458,12 @@ export class SimEngine {
     }
   }
 
-  /** Estación enlazada al MX6: la del extremo más cercano del tramo que recorre (nunca la entrada). */
   private linkedStation(w: WorkerRuntime): StationRuntime {
     const candidate = w.progress < 0.5 ? w.from : w.to;
     const id = candidate === ENTRY_ID ? w.from : candidate;
     return this.stationById[id] ?? this.stations[0];
   }
 
-  /** Recorrido continuo: al llegar a un nodo elige un tramo distinto al anterior. */
   private walk(w: WorkerRuntime) {
     w.battery = Math.max(MX6_MIN_BATTERY, w.battery - 0.003);
     const linked = this.linkedStation(w);
@@ -499,14 +479,12 @@ export class SimEngine {
     w.to = this.pickNeighbor(w.from, w.prev);
   }
 
-  /** Vecino elegido al azar, sin entrar a la entrada del mina y evitando volver al tramo anterior. */
   private pickNeighbor(node: string, previous: string | null): string {
     const options = (ADJACENCY[node] ?? []).filter((id) => id !== ENTRY_ID && id !== previous);
     const pool = options.length > 0 ? options : (ADJACENCY[node] ?? []).filter((id) => id !== ENTRY_ID);
     return pool[Math.floor(this.rng.next() * pool.length)] ?? node;
   }
 
-  /** Guarda la historia de cada estación para los reportes. */
   private recordTrace() {
     if (this.elapsed % TRACE_EVERY_S !== 0) return;
     for (const st of this.stations) {
@@ -519,7 +497,6 @@ export class SimEngine {
     }
   }
 
-  /** Historia de una estación y gas entre dos instantes (segundos desde el inicio del turno). */
   stationTrace(stationId: string, gas: GasKey, from: number, to: number): TracePoint[] {
     return (this.traces[stationId]?.[gas] ?? []).filter((p) => p.t >= from && p.t <= to);
   }
@@ -540,7 +517,6 @@ export class SimEngine {
     this.processingMs = Math.round(45 + this.rng.next() * 35);
   }
 
-  /** Eventos de equipo: falla de un sensor y de un MX6, o corte de energía. */
   private deviceEvents() {
     const at = DEVICE_EVENT_S[this.scenario];
     if (at === undefined || this.deviceEventDone || this.elapsed < at * TIME_SCALE) return;
@@ -562,7 +538,6 @@ export class SimEngine {
     }
   }
 
-  /** Registra una alerta de equipo (no es un gas). */
   private raiseEquipment(stationId: string, detail: string, level: 1 | 2 | 3) {
     this.alerts.push({
       id: ++this.alertId,
@@ -597,5 +572,4 @@ export class SimEngine {
   }
 }
 
-/** Instancia única para toda la aplicación. Todas las pestañas leen de su snapshot. */
 export const engine = new SimEngine();

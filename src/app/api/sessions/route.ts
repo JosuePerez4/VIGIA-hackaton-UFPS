@@ -12,7 +12,6 @@ const SCENARIOS = [
   'caida-oxigeno',
 ];
 
-/** Crea una sesión: un escenario lanzado o una mina reiniciada. */
 export async function POST(request: NextRequest) {
   if (!isWriteAuthorized(request)) return unauthorized();
   try {
@@ -31,7 +30,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** Últimas sesiones con conteo de alertas, para elegir cuál reportar. */
 export async function GET() {
   await connection();
   try {

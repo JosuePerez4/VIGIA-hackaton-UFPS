@@ -23,7 +23,6 @@ const RANGES = [
   { label: '5 días', minutes: 5 * 1440 },
 ] as const;
 
-/** Fin del histórico simulado: 29 oct 2026, 12:00 hora de Colombia. Fijo para que la demo sea repetible. */
 const END_MINUTE = Math.floor(Date.UTC(2026, 9, 29, 17, 0) / 60_000);
 
 const timeLabel = (t: number) =>

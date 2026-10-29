@@ -165,7 +165,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 
   var V = function (x, y, z) { return new THREE.Vector3(x, y, z); };
 
-  /* ---------- helpers ---------- */
   function mat(color, o) {
     o = o || {};
     var m = new THREE.MeshStandardMaterial({
@@ -235,7 +234,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     });
   }
 
-  /* ---------- vistas ---------- */
   function makeView(name, pos, target, minD, maxD, zoomAspect) {
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(30, 1, 0.1, 120);
@@ -275,10 +273,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 
   var YEL = 0xf2c230, CHAR = 0x2b2f38;
 
-  /* =====================================================
-     VISTA 1: DISPOSITIVO EXPLOSIONADO
-     ===================================================== */
-  // carcasa trasera con sobremoldeado
   var shell = part(dv, 'shell', V(0, 0, 0), V(0, 0, 0));
   put(shell, box(2.57, 4.5, 0.15, YEL), 0, 0, -0.625);
   put(shell, box(2.57, 0.14, 1.0, YEL), 0, 2.18, -0.05);
@@ -293,12 +287,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   put(shell, cyl(0.26, 0.12, 0xdfe4ee, { edges: true }), 0, 2.33, -0.05);
   put(shell, cyl(0.12, 0.2, CHAR), 0, 2.5, -0.05);
 
-  // clip de cinturón
   var clip = part(dv, 'clip', V(0, 0, 0), V(0, -0.5, -2.4));
   put(clip, box(0.9, 2.0, 0.1, 0x22262e), 0, -0.4, -0.78);
   put(clip, box(0.9, 0.12, 0.4, 0x22262e), 0, -1.45, -0.98);
 
-  // batería
   var battTex = textTexture(['Li-ion'], 400, 120, '#e6e9f0', ['#2a3142'], 62);
   var batt = part(dv, 'battery', V(0, -1.05, -0.4), V(0, -1.0, 0.9));
   put(batt, box(2.1, 1.7, 0.4, 0x3d4658), 0, 0, 0);
@@ -307,14 +299,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     put(batt, box(0.2, 0.12, 0.12, 0xd4a73a, { edges: false }), x, -0.9, 0);
   });
 
-  // bomba (opcional)
   var pump = part(dv, 'pump', V(0, 1.1, -0.4), V(0, 1.0, 0.9));
   put(pump, box(2.0, 1.7, 0.4, 0x727b8e), 0, 0, 0);
   put(pump, cyl(0.42, 0.22, 0x20242c, { axis: 'z', edges: true }), -0.45, 0, 0.3);
   put(pump, cyl(0.3, 0.16, 0xaeb6c6, { axis: 'z', edges: true }), 0.5, 0, 0.28);
   put(pump, cyl(0.06, 0.8, 0x20242c), 0.5, 1.0, 0.1);
 
-  // sensores enchufables
   var sensors = part(dv, 'sensors', V(0, 0, -0.12), V(0, 0, 1.9));
   put(sensors, box(2.2, 3.9, 0.06, 0x2f8f57), 0, 0, 0);
   var senColors = [0xe9a21b, 0x3b82f6, 0x9aa3b4, 0xe5484d, 0x14b88a, 0x8b6cf0];
@@ -327,7 +317,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     });
   });
 
-  // placa principal y pantalla LCD
   var pcb = part(dv, 'pcb', V(0, 0, 0.26), V(0, 0, 3.2));
   put(pcb, box(2.3, 4.1, 0.06, 0x2f9e5a), 0, 0, 0);
   put(pcb, box(1.95, 1.35, 0.1, 0x0e1119), 0, 1.0, 0.08);
@@ -336,7 +325,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   });
   put(pcb, cyl(0.3, 0.15, 0x1a1d24, { axis: 'z', edges: true }), 0, -1.6, 0.1);
 
-  // tapa frontal con pantalla y teclado
   var cover = part(dv, 'cover', V(0, 0, 0.53), V(0, 0, 4.8));
   put(cover, box(2.57, 4.5, 0.14, CHAR), 0, 0, 0);
   var scrTex = textTexture(['O2    20.9 %vol', 'LEL    0   %', 'CO     0   ppm', 'H2S  0.0   ppm'], 640, 440, '#0a111e', ['#58e08a'], 50);
@@ -359,7 +347,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     });
   });
 
-  // etiquetas del dispositivo
   var pumpOn = true;
   var dvDefs = [
     { side: 'r', t: 'Pantalla a color', s: 'Lecturas en tiempo real', part: 'cover', p: [0.75, 1.3, 0.09] },
@@ -385,9 +372,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   });
   dv.defs = dvDefs;
 
-  /* =====================================================
-     VISTA 2: PERSONA CON EL DETECTOR
-     ===================================================== */
   var W = wv.scene;
   var skin = 0xe0b48f, pants = 0x2c3a52, shirt = 0x3b6ea8, vest = 0xff7a1a, refl = 0xe8ecf3, hat = 0xf2c230, dark = 0x1b1f27;
   function addW(m, x, y, z) { m.position.set(x, y, z); W.add(m); return m; }
@@ -427,7 +411,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   lens.material = new THREE.MeshBasicMaterial({ color: 0xfff4c2 });
   addW(lens, 0, 6.5, 0.68);
 
-  // zona de respiración (hemisferio frontal)
   var bzMat = new THREE.MeshBasicMaterial({ color: 0x19c3a6, transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false });
   var bz = new THREE.Mesh(new THREE.SphereGeometry(1.0, 36, 20, 0, Math.PI, 0, Math.PI), bzMat);
   addW(bz, 0, 5.85, 0.1);
@@ -435,7 +418,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     new THREE.MeshBasicMaterial({ color: 0x19c3a6, wireframe: true, transparent: true, opacity: 0.28, depthWrite: false }));
   addW(bzWire, 0, 5.85, 0.1);
 
-  // detector sujeto a la correa del chaleco
   var devScreen = textTexture(['O2    20.9', 'CO     0', 'H2S  0.0'], 400, 300, '#0a111e', ['#58e08a'], 48);
   var dev = new THREE.Group();
   dev.add(box(0.31, 0.54, 0.16, YEL));
@@ -446,7 +428,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   dev.position.set(-0.5, 5.0, 0.66);
   W.add(dev);
 
-  // sombra simple en el piso
   var floor = new THREE.Mesh(new THREE.CircleGeometry(2.2, 40), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.12, depthWrite: false }));
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = 0.01;
@@ -467,7 +448,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   });
   wv.defs = wvDefs;
 
-  /* ---------- etiquetas ---------- */
   [dv, wv].forEach(function (view) {
     view.defs.forEach(function (d) {
       var el = document.createElement('div');
@@ -492,7 +472,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     });
   });
 
-  /* ---------- estado ---------- */
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var curT = reduce ? 1 : 0;
   var goalT = 1;
@@ -609,7 +588,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
   window.addEventListener('resize', resize);
 
-  /* ---------- distribución de etiquetas ---------- */
   function layout(view) {
     var w = stage.clientWidth, h = stage.clientHeight;
     var lw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lw')) || 210;

@@ -2,7 +2,6 @@ import { connection } from 'next/server';
 import { isUuid, json, serverError } from '@/lib/api';
 import { getPool } from '@/lib/db';
 
-/** Reporte del turno o escenario: resumen, alertas por nivel y línea de tiempo completa. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   await connection();
   const { id } = await params;

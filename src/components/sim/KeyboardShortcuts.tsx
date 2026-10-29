@@ -6,7 +6,6 @@ import { useVigia } from '@/store/vigia-store';
 
 const IGNORED_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A']);
 
-/** Atajos para la presentación: 1–5 lanzan escenarios, espacio pausa, R reinicia. */
 export function KeyboardShortcuts() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

@@ -1,7 +1,3 @@
-/**
- * Geometría de la mina tomada de `mapa_mina_estaciones.svg` (viewBox 390 × 660).
- * Coordenadas en unidades del SVG: la cuadrícula del plano avanza 60 px en X y 70 px en Y.
- */
 
 export type Area = 'Galería' | 'Refugio' | 'Bombeo' | 'Frente sur' | 'Sector este' | 'Entrada' | 'Superficie';
 
@@ -14,7 +10,6 @@ export interface MineNode {
 }
 
 export const ENTRY_ID = 'ENT-00';
-/** Base en superficie, fuera de la mina: donde está el ingeniero de turno. */
 export const BASE_ID = 'BASE-01';
 
 const NODE_DEFS: [id: string, x: number, y: number, area: Area][] = [
@@ -41,7 +36,6 @@ const NODE_DEFS: [id: string, x: number, y: number, area: Area][] = [
   ['EST-21', 130, 430, 'Galería'],
 ];
 
-/** Galerías: pares de nodos conectados (mismo trazo que el mapa). */
 const EDGE_DEFS: [string, string][] = [
   [ENTRY_ID, 'EST-01'],
   ['EST-01', 'EST-02'],
@@ -85,7 +79,6 @@ export const NODES: MineNode[] = [
 export const STATION_IDS = NODE_DEFS.map(([id]) => id);
 export const NODE_BY_ID: Record<string, MineNode> = Object.fromEntries(NODES.map((n) => [n.id, n]));
 
-/** Zonas del mapa (rectángulos del SVG). Son referencia visual, no afectan la simulación. */
 export const ZONES = [
   { name: 'Refugio', x: 264, y: 64, w: 92, h: 64, color: '#4d5a1a' },
   { name: 'Bombeo', x: 24, y: 334, w: 84, h: 52, color: '#1f4057' },
@@ -93,12 +86,9 @@ export const ZONES = [
   { name: 'Sector este', x: 264, y: 404, w: 92, h: 54, color: '#2c3b4d' },
 ] as const;
 
-/** Cable de superficie: une la base del ingeniero con el receptor de la entrada. */
 const SURFACE_EDGE: [string, string] = [BASE_ID, ENTRY_ID];
 
-/** Galerías (trazo oscuro de la mina). */
 export const EDGES: [string, string][] = EDGE_DEFS;
-/** Cables de fibra: siguen las galerías hasta la entrada y continúan hasta la base en superficie. */
 export const CABLES: [string, string][] = [...EDGE_DEFS, SURFACE_EDGE];
 
 export const ADJACENCY: Record<string, string[]> = Object.fromEntries(NODES.map((n) => [n.id, [] as string[]]));

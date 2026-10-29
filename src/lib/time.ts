@@ -1,4 +1,3 @@
-/** Segundos desde medianoche en la hora local de Colombia, para que el turno empiece a la hora real. */
 export function currentDaySeconds(): number {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'America/Bogota',

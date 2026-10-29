@@ -7,9 +7,7 @@ import { LEVEL_TEXT_COLORS, PdfReport } from './layout';
 
 type Thresholds = Record<GasKey, GasThreshold>;
 
-/** Segundos antes y después de la alerta que incluye el reporte de incidente. */
 const CONTEXT_S = 120;
-/** Cuánto antes de la alerta empieza la gráfica de evolución. */
 const LEAD_S = 300;
 
 const LEVEL_FILL: Record<number, RGB> = {
@@ -31,7 +29,6 @@ const levelLines = (thresholds: GasThreshold): { value: number; color: RGB; labe
   { value: thresholds.level3, color: LEVEL_FILL[3], label: 'Nivel 3' },
 ];
 
-/** Frase de tendencia: qué hizo el valor entre dos instantes, con la hora real. */
 function trendSentence(
   label: string,
   unit: string,
@@ -54,7 +51,6 @@ function trendSentence(
   );
 }
 
-/** Reporte de incidente: la alerta, cómo evolucionó el gas, lo que medía la estación, quién estaba cerca y lo que pasó alrededor. */
 export async function incidentPdf(snapshot: MineSnapshot, alert: AlertRecord, thresholds: Thresholds): Promise<Uint8Array> {
   const threshold = gasThreshold(alert.gas, thresholds);
   const isEquipment = alert.kind === 'equipo';
@@ -67,7 +63,6 @@ export async function incidentPdf(snapshot: MineSnapshot, alert: AlertRecord, th
   const workers = snapshot.workers.filter((w) => w.linkedStationId === alert.stationId);
   const clock = (elapsed: number) => clockFromElapsed(elapsed, snapshot.startSeconds);
 
-  // Evolución: promedio de 40 s de la estación desde antes de la alerta hasta el momento del reporte.
   const trace = isEquipment ? [] : engine.stationTrace(alert.stationId, alert.gas as GasKey, Math.max(0, alert.elapsed - LEAD_S), snapshot.elapsed);
   const values = trace.map((p) => p.v);
   const first = values[0];
@@ -196,14 +191,12 @@ export async function incidentPdf(snapshot: MineSnapshot, alert: AlertRecord, th
   return report.save();
 }
 
-/** Reporte del turno: totales por nivel, evolución del gas más alertado, alertas y línea de tiempo. */
 export async function turnPdf(snapshot: MineSnapshot, thresholds: Thresholds): Promise<Uint8Array> {
   const active = snapshot.alerts.filter((a) => a.status === 'activa');
   const unacknowledged = active.filter((a) => !a.acknowledged).length;
   const mineLevel = snapshot.mineLevel;
   const clock = (elapsed: number) => clockFromElapsed(elapsed, snapshot.startSeconds);
 
-  // Gas con más alertas: su evolución es la que cuenta la historia del turno.
   const perGas = GAS_ORDER.map((gas) => ({ gas, count: snapshot.alerts.filter((a) => a.gas === gas).length }));
   const focus = perGas.reduce((best, cur) => (cur.count > best.count ? cur : best), perGas[0]);
   const focusThreshold = thresholds[focus.gas];

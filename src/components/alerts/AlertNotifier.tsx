@@ -14,17 +14,12 @@ const MAX_TOASTS = 3;
 
 interface Toast {
   key: number;
-  /** Un caso = una estación y un gas. Varias alertas del mismo caso se muestran en un solo aviso. */
   episode: string;
   alert: AlertRecord;
 }
 
 const episodeOf = (alert: AlertRecord) => `${alert.stationId}|${alert.gas}`;
 
-/**
- * Avisa de cada caso nuevo: reproduce el sonido y muestra un aviso en pantalla.
- * Si el mismo caso escala de nivel, el aviso se actualiza en lugar de repetirse.
- */
 export function AlertNotifier() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [muted, setMuted] = useState(false);
@@ -40,7 +35,6 @@ export function AlertNotifier() {
     audioRef.current = audio;
     const timers = timersRef.current;
 
-    // Los navegadores bloquean el audio hasta el primer gesto del usuario.
     const unlock = () => {
       audio
         .play()
@@ -81,7 +75,6 @@ export function AlertNotifier() {
       lastSeen = state.alerts.reduce((max, a) => Math.max(max, a.id), lastSeen);
       if (fresh.length === 0) return;
 
-      // Por caso, solo cuenta la alerta más reciente.
       const newest = new Map<string, AlertRecord>();
       for (const alert of fresh) newest.set(episodeOf(alert), alert);
 

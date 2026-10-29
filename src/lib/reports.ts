@@ -6,7 +6,6 @@ type Thresholds = Record<GasKey, GasThreshold>;
 
 const csvCell = (value: unknown) => `"${String(value).replace(/"/g, '""')}"`;
 
-/** Alertas en CSV, para análisis en hojas de cálculo. */
 export function alertsCsv(snapshot: MineSnapshot, thresholds: Thresholds): string {
   const header = ['id', 'hora', 'estacion', 'gas', 'nivel', 'valor', 'unidad', 'canal', 'estado', 'reconocida'];
   const rows = snapshot.alerts.map((a) => {
@@ -18,7 +17,6 @@ export function alertsCsv(snapshot: MineSnapshot, thresholds: Thresholds): strin
   return [header.join(','), ...rows].join('\n');
 }
 
-/** Descarga un archivo generado en el navegador. */
 export function downloadFile(name: string, mime: string, content: string | Uint8Array) {
   const blob = new Blob([content as BlobPart], { type: mime });
   const url = URL.createObjectURL(blob);

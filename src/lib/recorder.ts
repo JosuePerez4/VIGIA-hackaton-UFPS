@@ -2,9 +2,7 @@ import { GAS_ORDER } from '@/config/thresholds';
 import type { AlertRow, IngestBatch, StationRow, TimelineRow, WorkerRow } from '@/lib/ingest';
 import type { MineSnapshot } from '@/sim/types';
 
-/** Muestreo de lecturas, en segundos simulados. */
 const SAMPLE_EVERY_S = 30;
-/** Envío al servidor, en tiempo real. */
 const FLUSH_MS = 5000;
 interface Pending {
   alerts: AlertRow[];
@@ -21,16 +19,11 @@ interface Session {
   serverId: string | null;
   creating: boolean;
   pending: Pending;
-  /** Firma de la última versión enviada de cada alerta, para reenviar solo cuando cambia. */
   sentAlerts: Map<number, string>;
   lastEventNo: number;
   nextSampleAt: number;
 }
 
-/**
- * Observa el store de la simulación y arma lotes para Neon.
- * Un lote por sesión: cada lanzamiento de escenario o reinicio abre una sesión nueva.
- */
 export class SessionRecorder {
   private sessions: Session[] = [];
   private current: Session | null = null;
@@ -47,7 +40,6 @@ export class SessionRecorder {
     this.timer = null;
   }
 
-  /** Recibe cada cambio del store y acumula lo que sea nuevo. */
   observe(snapshot: MineSnapshot) {
     const startsNewSession =
       !this.current ||
@@ -149,13 +141,11 @@ export class SessionRecorder {
       const { id } = (await response.json()) as { id: string };
       session.serverId = id;
     } catch {
-      // Sin red o sin base: se reintenta en el siguiente envío.
     } finally {
       session.creating = false;
     }
   }
 
-  /** Envía lo pendiente de cada sesión. Si falla, lo conserva para el siguiente intento. */
   async flush() {
     for (const session of this.sessions) {
       if (session.serverId === null) {
@@ -176,7 +166,6 @@ export class SessionRecorder {
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
       } catch {
-        // Se devuelve al inicio de la cola para reenviarlo en orden. Las alertas se reescriben sin duplicar.
         session.pending = {
           alerts: [...sent.alerts, ...session.pending.alerts],
           timeline: [...sent.timeline, ...session.pending.timeline],

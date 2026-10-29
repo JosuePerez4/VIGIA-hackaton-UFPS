@@ -8,9 +8,7 @@ import type { MineSnapshot } from '@/sim/types';
 type Thresholds = Record<GasKey, GasThreshold>;
 
 export interface MapLayers {
-  /** Cables de fibra que van de cada estación hasta el receptor y la base. */
   cables: boolean;
-  /** Enlaces inalámbricos de cada MX6 con su estación. */
   wireless: boolean;
 }
 
@@ -18,14 +16,12 @@ interface UiState {
   layers: MapLayers;
   speed: 1 | 2 | 5 | 10;
   paused: boolean;
-  /** Estación elegida en el selector antes de lanzar un escenario. */
   pendingTarget: string;
   selectedStationId: string | null;
   selectedWorkerId: string | null;
   selectedGas: GasKey;
   heatGas: GasKey | null;
   thresholds: Thresholds;
-  /** Id de la última alerta de Nivel 3 cuyo aviso a pantalla completa fue cerrado. */
   dismissedEmergencyId: number | null;
 }
 

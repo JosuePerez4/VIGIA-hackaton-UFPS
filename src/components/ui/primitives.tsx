@@ -22,7 +22,6 @@ export const levelBg: Record<Level, string> = {
   3: 'bg-lvl3',
 };
 
-/** Estado siempre con texto e icono de forma: el color nunca es el único canal. */
 export function LevelPill({ level, compact = false }: { level: Level; compact?: boolean }) {
   return (
     <span

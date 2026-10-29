@@ -1,6 +1,5 @@
 export type GasKey = 'CH4' | 'CO' | 'O2' | 'H2S' | 'CO2' | 'NO2' | 'TEMP' | 'AIR';
 
-/** 'above': peligro cuando el valor sube. 'below': peligro cuando el valor baja (O₂, velocidad del aire). */
 export type Direction = 'above' | 'below';
 
 export interface GasThreshold {
@@ -11,16 +10,12 @@ export interface GasThreshold {
   level1: number;
   level2: number;
   level3: number;
-  /** Canal rápido: tasa de cambio absoluta (unidad/s) que dispara una alerta temprana de Nivel 1. */
   fastRate: number;
 }
 
 export type Level = 0 | 1 | 2 | 3;
 
-/**
- * Valores de EJEMPLO para el prototipo. NO son valores legales.
- * Se ajustarán con la normativa aplicable.
- */
+// Valores de ejemplo del prototipo: no son valores legales.
 // TODO: reemplazar con los valores del Decreto 1886 de 2015 / Decreto 944 de 2022
 export const DEFAULT_THRESHOLDS: Record<GasKey, GasThreshold> = {
   CH4: { label: 'Metano (CH₄)', unit: '% vol', decimals: 2, direction: 'above', level1: 1.0, level2: 1.5, level3: 2.0, fastRate: 0.006 },
@@ -52,7 +47,6 @@ export function levelFor(value: number, threshold: GasThreshold): Level {
   return value <= level3 ? 3 : value <= level2 ? 2 : value <= level1 ? 1 : 0;
 }
 
-/** Las alertas de equipo (falla de un dispositivo o corte de energía) no tienen umbral de gas. */
 export const EQUIPMENT_THRESHOLD: GasThreshold = {
   label: 'Equipo',
   unit: '',
@@ -64,7 +58,6 @@ export const EQUIPMENT_THRESHOLD: GasThreshold = {
   fastRate: 0,
 };
 
-/** Umbral de un gas, o el neutro para alertas de equipo. */
 export function gasThreshold(gas: GasKey | 'EQUIPO', thresholds: Record<GasKey, GasThreshold>): GasThreshold {
   return gas === 'EQUIPO' ? EQUIPMENT_THRESHOLD : thresholds[gas];
 }

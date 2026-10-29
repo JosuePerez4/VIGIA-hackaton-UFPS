@@ -1,10 +1,7 @@
+// Datos sintéticos: no representan mediciones reales.
 import { levelFor, type Direction, type GasKey, type GasThreshold, type Level } from '@/config/thresholds';
 import { STATION_IDS } from './mine';
 
-/**
- * Histórico SIMULADO. Se calcula de forma determinista a partir del minuto, así no hay que guardar miles de filas.
- * No representa mediciones reales.
- */
 
 const BASE: Record<GasKey, number> = {
   CH4: 0.25,
@@ -34,7 +31,6 @@ function stationFactor(index: number) {
   return 0.9 + hash(index + 1) * 0.2;
 }
 
-/** Valor sintético de un gas en una estación (índice) en un minuto absoluto. */
 export function syntheticValue(gas: GasKey, stationIndex: number, minute: number): number {
   const minuteOfDay = ((minute % 1440) + 1440) % 1440;
   const hour = minuteOfDay / 60;
@@ -73,7 +69,6 @@ export function syntheticValue(gas: GasKey, stationIndex: number, minute: number
   return Math.max(0, value);
 }
 
-/** Valor representativo de la mina: la estación con mayor riesgo para el gas. */
 export function mineValue(gas: GasKey, direction: Direction, minute: number): number {
   const values = STATION_IDS.map((_, i) => syntheticValue(gas, i, minute));
   return direction === 'above' ? Math.max(...values) : Math.min(...values);
@@ -88,7 +83,6 @@ export interface SeriesOptions {
   gas: GasKey;
   stationId: string | null;
   direction: Direction;
-  /** Minuto absoluto final del rango. */
   endMinute: number;
   minutes: number;
 }
@@ -110,7 +104,6 @@ export interface HistoryEvent {
   durationMin: number;
 }
 
-/** Eventos: cruces del umbral de Nivel 1 o superior en la serie. */
 export function detectEvents(points: HistoryPoint[], threshold: GasThreshold): HistoryEvent[] {
   const events: HistoryEvent[] = [];
   let current: HistoryEvent | null = null;

@@ -1,6 +1,5 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from 'pdf-lib';
 
-/** Tamaño A4 en puntos y márgenes del reporte. */
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
 const MARGIN = 40;
@@ -20,7 +19,6 @@ export const COLORS = {
   softWhite: rgb(0.78, 0.83, 0.88),
 } as const;
 
-/** Colores de nivel pensados para leerse sobre fondo blanco. */
 export const LEVEL_TEXT_COLORS: Record<number, RGB> = {
   0: rgb(0.02, 0.5, 0.35),
   1: rgb(0.7, 0.45, 0.02),
@@ -30,10 +28,6 @@ export const LEVEL_TEXT_COLORS: Record<number, RGB> = {
 
 const SUBSCRIPT_DIGITS = '₀₁₂₃₄₅₆₇₈₉';
 
-/**
- * Deja solo caracteres que la fuente estándar del PDF (WinAnsi) puede dibujar.
- * Convierte subíndices a dígitos normales (CH₄ → CH4) y el signo menos a guion.
- */
 export function pdfText(input: unknown): string {
   return String(input)
     .replace(/[₀-₉]/g, (c) => String(SUBSCRIPT_DIGITS.indexOf(c)))
@@ -68,12 +62,10 @@ export interface Cell {
 export interface TableSpec {
   headers: string[];
   rows: (Cell | string)[][];
-  /** Fracción del ancho útil para cada columna (suma 1). */
   widths: number[];
   align?: ('left' | 'right')[];
 }
 
-/** Documento PDF con cursor vertical: añade páginas cuando falta espacio y dibuja pie al final. */
 export class PdfReport {
   private page!: PDFPage;
   private y = 0;
@@ -95,7 +87,6 @@ export class PdfReport {
     return new PdfReport(doc, font, bold, footerLeft);
   }
 
-  /** Encabezado de portada: franja oscura con título, subtítulo y acento de color. */
   cover(title: string, subtitle: string, accent: RGB) {
     this.newPage();
     this.page.drawRectangle({ x: 0, y: PAGE_H - BAND_H, width: PAGE_W, height: BAND_H, color: COLORS.band });
@@ -129,7 +120,6 @@ export class PdfReport {
     this.y -= 4;
   }
 
-  /** Tarjetas de indicadores en una fila. */
   kpis(items: { label: string; value: string; color?: RGB }[]) {
     this.ensure(70);
     const gap = 10;
@@ -151,7 +141,6 @@ export class PdfReport {
     this.y = top - height - 14;
   }
 
-  /** Pares etiqueta-valor, en dos columnas de texto alineadas. */
   keyValues(rows: [string, string | Cell][]) {
     const labelW = 165;
     for (const [label, raw] of rows) {
@@ -173,7 +162,6 @@ export class PdfReport {
     this.y -= 4;
   }
 
-  /** Tabla con encabezado oscuro, filas alternas y saltos de página que repiten el encabezado. */
   table(spec: TableSpec) {
     const widths = spec.widths.map((f) => f * CONTENT_W);
     const align = spec.align ?? spec.widths.map(() => 'left' as const);
@@ -237,7 +225,6 @@ export class PdfReport {
     this.y -= 12;
   }
 
-  /** Gráfica de línea con umbrales de nivel y una marca vertical opcional (por ejemplo, la alerta). */
   chart(spec: {
     points: { t: number; v: number }[];
     thresholds: { value: number; color: RGB; label: string }[];
@@ -320,12 +307,10 @@ export class PdfReport {
     this.y = bottom - 30;
   }
 
-  /** Texto de vacío cuando una sección no tiene datos. */
   empty(text: string) {
     this.paragraph(text, 9.5, COLORS.muted);
   }
 
-  /** Dibuja el pie en todas las páginas y devuelve el PDF. */
   async save(): Promise<Uint8Array> {
     const total = this.pages.length;
     this.pages.forEach((page, i) => {

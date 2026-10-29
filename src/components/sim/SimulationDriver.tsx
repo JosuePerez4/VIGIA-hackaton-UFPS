@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useVigia } from '@/store/vigia-store';
 
-/** Reloj de la simulación: avanza el motor según la velocidad (1x, 2x, 5x). Un único intervalo para toda la app. */
 export function SimulationDriver() {
   useEffect(() => {
     let last = performance.now();

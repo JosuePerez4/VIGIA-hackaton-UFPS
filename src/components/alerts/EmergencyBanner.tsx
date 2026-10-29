@@ -4,7 +4,6 @@ import { gasThreshold } from '@/config/thresholds';
 import { NODE_BY_ID } from '@/sim/mine';
 import { useVigia } from '@/store/vigia-store';
 
-/** Aviso a pantalla completa cuando hay una alerta de Nivel 3. Reaparece si llega otra alerta de Nivel 3. */
 export function EmergencyBanner() {
   const alerts = useVigia((s) => s.alerts);
   const emergency = useVigia((s) => s.emergency);

@@ -176,7 +176,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   fill.position.set(-8, -3, 6);
   scene.add(fill);
 
-  /* ---------- helpers ---------- */
   function mat(color, o) {
     o = o || {};
     var m = new THREE.MeshStandardMaterial({
@@ -248,7 +247,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   var NMOD = 8;
   var MX = function (i) { return -1.9 + i * 0.5429; };
 
-  /* ---------- carcasa base ---------- */
   var shell = 0xd3d9e3;
   var base = part('base', V(0, 0, 0), V(0, 0, 0));
   put(base, box(5, 3.6, 0.15, shell), 0, 0, -0.375);
@@ -263,7 +261,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     });
   });
 
-  /* ---------- prensaestopas ---------- */
   var glands = part('glands', V(0, 1.725, 0), V(0, 1.5, 0));
   [-1.4, -0.2, 1.0].forEach(function (x) {
     put(glands, cyl(0.2, 0.4, 0x3b4252, { edges: true }), x, 0.2, 0);
@@ -271,7 +268,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     put(glands, cyl(0.12, 0.22, 0x2a303d), x, 0.5, 0);
   });
 
-  /* ---------- bornero y alimentación ---------- */
   var term = part('terminal', V(0, 0, -0.15), V(0, 0, 0.95));
   put(term, box(3.6, 0.5, 0.25, 0x4c5568), 0.2, 1.0, 0);
   for (var t = 0; t < 8; t++) {
@@ -281,7 +277,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   put(term, box(1.2, 0.22, 0.04, 0x1f2430), -1.4, -0.35, 0.17, 0);
   put(term, box(1.5, 0.5, 0.25, 0x6a7388), 1.2, -0.7, 0);
 
-  /* ---------- placa de procesamiento ---------- */
   var pcb = part('pcb', V(0, 0, 0.12), V(0, 0, 2.4));
   put(pcb, box(4.5, 3.1, 0.08, 0x2f9e5a), 0, 0, 0);
   [[-2.0, -1.3], [2.0, -1.3], [-2.0, 1.3], [2.0, 1.3]].forEach(function (p) {
@@ -302,7 +297,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     put(pcb, box(0.36, 0.25, 0.2, 0x0e121c), MX(s), -1.3, 0.14);
   }
 
-  /* ---------- módulos de sensor ---------- */
   var modColors = [0xe9a21b, 0x3b82f6, 0x9aa3b4, 0xe5484d, 0x14b88a, 0x8b6cf0];
   var modules = part('modules', V(0, 0, 0.34), V(0, -1.9, 2.4));
   for (var i = 0; i < 6; i++) {
@@ -323,7 +317,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     put(blanks, box(0.28, 0.06, 0.2, 0x59627a), MX(b), -1.7, 0);
   }
 
-  /* ---------- tapa frontal ---------- */
   var cover = part('cover', V(0, 0, 0.56), V(0, 0, 4.2));
   put(cover, box(5, 3.6, 0.2, 0xe8ecf3, { opacity: 0.5, edgeStrength: 0.5 }), 0, 0, 0);
   var dispTex = textTexture(['O2   20.9 %vol', 'CO    0   ppm', 'CO2  0.04 %vol'], 640, 240, '#0a111e', ['#58e08a', '#58e08a', '#58e08a'], 54);
@@ -342,7 +335,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     put(cover, box(0.34, 0.07, 0.03, 0x8b94a8, { edges: false }), MX(h), -1.55, 0.105);
   }
 
-  /* ---------- batería de respaldo ---------- */
   var batt = part('battery', V(4.2, -0.5, -0.05), V(1.3, 0, -0.7));
   put(batt, box(1.5, 2.4, 0.9, 0x465064), 0, 0, 0);
   put(batt, box(1.38, 0.1, 0.8, 0x6d778c), 0, 1.25, 0);
@@ -350,7 +342,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   put(batt, cyl(0.09, 0.14, 0x20242e), 0.35, 1.37, 0);
   put(batt, box(1.1, 0.55, 0.02, 0xe2e6ee, { edges: false }), 0, 0.3, 0.46);
 
-  /* ---------- etiquetas ---------- */
   var defs = [
     { k: 'cover',  side: 'r', t: 'Tapa frontal',            s: 'Pantalla LED e indicadores de alarma', part: 'cover',    p: [2.1, 1.55, 0.1] },
     { k: 'comm',   side: 'r', t: 'Interfaz de comunicación', s: 'Datos hacia el sistema de monitoreo', part: 'pcb',      p: [2.3, 0.7, 0.3], hl: comm },
@@ -394,7 +385,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     });
   }
 
-  /* ---------- estado y animación ---------- */
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var curT = reduce ? 1 : 0;
   var goalT = 1;

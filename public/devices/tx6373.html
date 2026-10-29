@@ -176,7 +176,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 
   var V = function (x, y, z) { return new THREE.Vector3(x, y, z); };
 
-  /* ---------- helpers ---------- */
   function mat(color, o) {
     o = o || {};
     var m = new THREE.MeshStandardMaterial({
@@ -263,7 +262,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     });
   }
 
-  /* ---------- vistas ---------- */
   function makeView(name, pos, target, minD, maxD, zoomAspect) {
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(30, 1, 0.1, 160);
@@ -303,7 +301,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 
   var STEEL = 0xb4bccb, STEEL_D = 0x6b7487;
 
-  /* ---------- sonda en varilla (se usa en las dos vistas) ---------- */
   function buildProbe(mk) {
     var g;
     g = mk('gland', 3.6);
@@ -347,12 +344,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     put(g, cyl(0.05, 6.9, 0xff7a1a, { seg: 12 }), 0, 0, 0);
   }
 
-  /* =====================================================
-     VISTA 1: DISPOSITIVO EXPLOSIONADO
-     ===================================================== */
   buildProbe(function (key, y) { return part(dv, key, V(0, y, 0)); });
 
-  // transmisor: carcasa, módulo de circuito y tapa con pantalla
   var gray = 0x8d96a8;
   var txBase = part(dv, 'txBase', V(0, 5.0, 0));
   put(txBase, box(2.0, 2.6, 0.12, gray), 0, 0, -0.3);
@@ -389,7 +382,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     put(txCover, cyl(0.12, 0.06, 0x454b58, { axis: 'z', edges: true }), -0.5 + i * 0.5, -0.9, 0.08);
   });
 
-  // direcciones de explosión
   var dirs = {
     txBase: V(0, 0, 0), txPcb: V(0, 0, 1.7), txCover: V(0, 0, 3.2),
     gland: V(0, -0.4, 0), grip: V(0, -0.9, 0), seg1: V(0, -1.5, 0), coup1: V(0, -2.0, 0),
@@ -437,12 +429,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   });
   dv.defs = dvDefs;
 
-  /* =====================================================
-     VISTA 2: USO EN UN BARRENO
-     ===================================================== */
   var W = wv.scene;
 
-  // macizo rocoso en corte (mitad trasera) con estratos
   var rock = new THREE.Group();
   W.add(rock);
   put(rock, box(9, 1.8, 3, 0x8b8f99, { edgeStrength: 0.2 }), -4.5, 2.1, -1.5);
@@ -453,7 +441,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   var ground = box(26, 0.2, 8, 0xa7aebb, { edgeStrength: 0.15 });
   put(W, ground, 2, -3.1, -0.6);
 
-  // sonda dentro del barreno (la sonda se construye vertical y se gira)
   var probe = new THREE.Group();
   W.add(probe);
   buildProbe(function (key, y) {
@@ -466,7 +453,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   probe.rotation.z = -Math.PI / 2;
   probe.position.set(-1.0, 0, 0.14);
 
-  // gas acumulado en el barreno
   var gasMat = new THREE.MeshBasicMaterial({ color: 0xe5484d, transparent: true, opacity: 0.55, depthWrite: false });
   var gasG = new THREE.Group();
   [[-6.0, 0.15, 0.08, 0.1], [-5.8, -0.3, 0.12, 0.08], [-5.5, 0.35, 0.06, 0.09], [-6.1, -0.1, 0.15, 0.07],
@@ -478,7 +464,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   });
   W.add(gasG);
 
-  // transmisor en el extremo exterior de la varilla
   var tx = new THREE.Group();
   tx.position.set(4.3, 0, 0.14);
   W.add(tx);
@@ -494,11 +479,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     put(tx, cyl(0.13, 0.06, 0x454b58, { axis: 'z', edges: true }), -0.2 + i * 0.5, -0.65, 0.42);
   });
 
-  // mano y brazo que sostienen la empuñadura
   W.add(limb(V(5.4, -2.9, 2.4), V(2.0, -0.2, 0.4), 0.34, 0x3b6ea8));
   put(W, sph(0.42, 0xff7a1a), 1.95, -0.1, 0.38);
 
-  // perforadora en reposo
   var drill = new THREE.Group();
   drill.position.set(8.6, -2.35, 0.9);
   W.add(drill);
@@ -526,7 +509,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   });
   wv.defs = wvDefs;
 
-  /* ---------- etiquetas ---------- */
   [dv, wv].forEach(function (view) {
     view.defs.forEach(function (d) {
       var el = document.createElement('div');
@@ -551,7 +533,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     });
   });
 
-  /* ---------- estado ---------- */
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var curT = reduce ? 1 : 0;
   var goalT = 1;
@@ -586,7 +567,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     }
   }
 
-  // el cable siempre une el prensaestopas con el cabezal
   var CABLE_TOP = 3.6, CABLE_L0 = 6.9;
   function applyT(t) {
     var e = t * t * (3 - 2 * t);
@@ -663,7 +643,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
   window.addEventListener('resize', resize);
 
-  /* ---------- distribución de etiquetas ---------- */
   function layout(view) {
     var w = stage.clientWidth, h = stage.clientHeight;
     var lw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lw')) || 214;

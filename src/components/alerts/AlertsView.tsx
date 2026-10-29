@@ -7,7 +7,6 @@ import { downloadAlertsCsv, downloadIncidentReport, downloadTurnReport } from '@
 import { NODE_BY_ID } from '@/sim/mine';
 import { useVigia } from '@/store/vigia-store';
 
-/** Snapshot completo del store en el momento del clic (no se suscribe a cada tick). */
 const current = () => useVigia.getState();
 
 type LevelFilter = 'todos' | '1' | '2' | '3';

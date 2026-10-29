@@ -8,10 +8,6 @@ export function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
 }
 
-/**
- * Protección opcional de escritura: si INGEST_TOKEN está definido, las escrituras deben enviar
- * el encabezado x-ingest-token con ese valor. Sin la variable, la API queda abierta (solo prototipo).
- */
 export function isWriteAuthorized(request: NextRequest): boolean {
   const expected = process.env.INGEST_TOKEN;
   if (!expected) return true;

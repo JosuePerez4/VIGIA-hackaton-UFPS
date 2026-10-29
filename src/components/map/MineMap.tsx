@@ -8,10 +8,8 @@ import { LEVEL_META, type GasThreshold, type Level } from '@/config/thresholds';
 import { BASE_ID, CABLES, EDGES, ENTRY_ID, NODE_BY_ID, ZONES, type MineNode } from '@/sim/mine';
 import { useVigia } from '@/store/vigia-store';
 
-/** Mapa SVG (390 × 660). Cuadrícula de 60 px en X y 70 px en Y → una unidad por celda. */
 const planXZ = (x: number, y: number): [number, number] => [(x - 190) / 60, (y - 330) / 70];
 
-/** Color por tipo de nodo. El estado (nivel) se muestra aparte, en el aro de cada estación. */
 export const TYPE_COLORS = {
   station: '#60a5fa',
   mx6: '#2dd4bf',
@@ -20,7 +18,6 @@ export const TYPE_COLORS = {
   cable: '#cbd5e1',
 } as const;
 
-/** Estados de dispositivo: falla (rojo) y alimentación por batería durante un corte de luz. */
 export const STATE_COLORS = {
   fault: '#f43f5e',
   battery: '#e879f9',
@@ -28,7 +25,6 @@ export const STATE_COLORS = {
 
 export type ViewMode = 'plano' | 'niveles';
 
-/** Niveles de la mina en modo "niveles": de arriba hacia abajo. Y en la escena. */
 const LEVELS = [
   { key: 'A', y: -1.4, label: 'Nivel −100 m', max: 200 },
   { key: 'B', y: -2.8, label: 'Nivel −200 m', max: 320 },
@@ -36,7 +32,6 @@ const LEVELS = [
   { key: 'D', y: -5.6, label: 'Nivel −400 m', max: Infinity },
 ] as const;
 
-/** Posición de un nodo según el modo. En "plano" todo está en y = 0; en "niveles" cada estación cae a su nivel. */
 function placeNode(node: MineNode, mode: ViewMode): [number, number, number] {
   const [x, z] = planXZ(node.x, node.y);
   if (mode === 'plano') return [x, 0, z];
@@ -52,10 +47,6 @@ const HEAT_STOPS = ['#34d399', '#facc15', '#fb923c', '#f43f5e'].map((c) => new T
 const PX_PER_UNIT = 320;
 const LABEL_HEIGHT_PX = 80;
 
-/**
- * Etiqueta dibujada en una textura dentro de la escena. Evita <Html> de drei, que monta raíces
- * de React dentro del canvas y rompe al desmontar la ruta.
- */
 function TextLabel({ position, text, size = 40 }: { position: [number, number, number]; text: string; size?: number }) {
   const { texture, width } = useMemo(() => {
     const measure = document.createElement('canvas').getContext('2d');
@@ -112,7 +103,6 @@ function heatColor(t: number) {
   return HEAT_STOPS[index].clone().lerp(HEAT_STOPS[next], clamped - index);
 }
 
-/** Cercanía al Nivel 3 (0 = sin riesgo, 1 = Nivel 3), según el sentido de peligro del gas. */
 function heatIntensity(value: number, threshold: GasThreshold) {
   const { level1, level3, direction } = threshold;
   return direction === 'above' ? value / level3 : (level1 - value) / (level1 - level3);
@@ -132,7 +122,6 @@ function Galleries({ place }: { place: Place }) {
   );
 }
 
-/** Cables de fibra siguiendo las galerías hasta el receptor; el de superficie va punteado. */
 function Cables({ place }: { place: Place }) {
   return (
     <>
@@ -165,7 +154,6 @@ function Zones() {
         const cx = zone.x + zone.w / 2;
         const cy = zone.y + zone.h / 2;
         const [sx, sz] = planXZ(cx, cy);
-        // Etiqueta en la franja superior de la zona para no tapar las estaciones que contiene.
         const [labelX, labelZ] = planXZ(cx, zone.y + 6);
         return (
           <group key={zone.name}>
@@ -181,7 +169,6 @@ function Zones() {
   );
 }
 
-/** Plano de cada nivel en modo "niveles", con su nombre. */
 function LevelPlates() {
   return (
     <>
@@ -234,10 +221,8 @@ function Pulse({
   );
 }
 
-/** Anillo plano cuadrado: el cuadrado se gira 45° en su plano para quedar alineado con el cubo. */
 const SQUARE_FLAT: [number, number, number] = [-Math.PI / 2, 0, Math.PI / 4];
 
-/** Onda de señal inalámbrica: un aro que se expande y se desvanece. Sutil a propósito. */
 function SignalRing({ position, active, offset }: { position: [number, number, number]; active: boolean; offset: number }) {
   const mesh = useRef<THREE.Mesh>(null);
   const material = useRef<THREE.MeshBasicMaterial>(null);
@@ -347,7 +332,6 @@ export function MineMap() {
 
         {workers.map((w, index) => {
           const linked = stations.find((s) => s.id === w.linkedStationId);
-          // El minero se dibuja en el plano XZ del punto que recorre, a la altura del nivel de su estación.
           const [wx, wz] = planXZ(w.x, w.y);
           const levelY = linked ? place(linked.id)[1] : 0;
           const selected = w.id === selectedWorkerId;
