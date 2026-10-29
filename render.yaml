@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: vigia
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci && npm run build
+    startCommand: npm start -- -p $PORT
+    healthCheckPath: /panel
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: DATABASE_URL
+        sync: false
+      - key: INGEST_TOKEN
+        sync: false
