@@ -1,5 +1,5 @@
 import { DEFAULT_THRESHOLDS, GAS_ORDER, levelFor, type GasKey, type GasThreshold, type Level } from '@/config/thresholds';
-import { ADJACENCY, ENTRY_ID, LAST_CALIBRATION, NODE_BY_ID, STATION_BATTERY_START, STATION_IDS, WORKER_SEEDS, hopDistances } from './mine';
+import { ADJACENCY, ENTRY_ID, LAST_CALIBRATION, NODE_BY_ID, STATION_IDS, WORKER_SEEDS, hopDistances } from './mine';
 import { SCENARIO_BY_ID, gasEffect, type ScenarioId } from './scenarios';
 import { wetBulbFromTempRh } from './climate';
 import type {
@@ -61,6 +61,8 @@ const ALERT_LENGTH = 300;
 const START_SECONDS = 6 * 3600; // turno inicia a las 06:00
 /** Segundos que tarda un minero en recorrer un tramo de galería. */
 const WALK_SECONDS = 10;
+/** Los MX6 de los mineros se mantienen entre 90 % y 100 %. */
+const MX6_MIN_BATTERY = 90;
 
 class Rng {
   private state: number;
@@ -174,7 +176,7 @@ export class SimEngine {
         y: node.y,
         factor: 0.9 + this.rng.next() * 0.2,
         rh: 0,
-        battery: STATION_BATTERY_START[id] ?? 70 + this.rng.next() * 25,
+        battery: 100,
         latencyMs: 60,
         lastCalibration: LAST_CALIBRATION[index % LAST_CALIBRATION.length],
         samples: gasRecord(() => []),
@@ -203,7 +205,7 @@ export class SimEngine {
         name: seed.name,
         role: seed.role,
         mx6: seed.mx6,
-        battery: 60 + this.rng.next() * 35,
+        battery: 90 + this.rng.next() * 10,
         from: seed.start,
         to: first,
         prev: null,
@@ -350,7 +352,7 @@ export class SimEngine {
       const baseRh = 78 + (st.factor - 1) * 40;
       st.rh = Math.min(99, Math.max(10, baseRh + (this.rng.next() * 2 - 1) * 1.5));
       st.latencyMs = Math.round(40 + this.rng.next() * 110);
-      st.battery = Math.max(0, st.battery - 0.0015);
+
     }
   }
 
@@ -448,7 +450,7 @@ export class SimEngine {
 
   /** Recorrido continuo: al llegar a un nodo elige un tramo distinto al anterior. */
   private walk(w: WorkerRuntime) {
-    w.battery = Math.max(0, w.battery - 0.003);
+    w.battery = Math.max(MX6_MIN_BATTERY, w.battery - 0.003);
     const linked = this.linkedStation(w);
     for (const gas of GAS_ORDER) w.exposure[gas] += linked.raw[gas];
     w.samples += 1;

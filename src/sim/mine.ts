@@ -143,6 +143,4 @@ export const WORKER_SEEDS: WorkerSeed[] = [
   { id: 'MIN-10', name: 'Yeison Ramírez', role: 'Topógrafo', mx6: 'MX6-1010', start: 'EST-21' },
 ];
 
-/** Batería inicial de estaciones (una baja para mostrar alertas de mantenimiento). */
-export const STATION_BATTERY_START: Record<string, number> = { 'EST-05': 18 };
 export const LAST_CALIBRATION = ['2026-10-02', '2026-10-09', '2026-10-14', '2026-10-21'];
