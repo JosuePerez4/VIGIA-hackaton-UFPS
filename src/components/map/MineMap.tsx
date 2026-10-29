@@ -153,7 +153,20 @@ function Zones() {
   );
 }
 
-function Pulse({ position, color, active }: { position: [number, number, number]; color: string; active: boolean }) {
+/** Anillo plano cuadrado: el cuadrado se gira 45° en su plano para quedar alineado con el cubo. */
+const SQUARE_FLAT: [number, number, number] = [-Math.PI / 2, 0, Math.PI / 4];
+
+function Pulse({
+  position,
+  color,
+  active,
+  square = false,
+}: {
+  position: [number, number, number];
+  color: string;
+  active: boolean;
+  square?: boolean;
+}) {
   const ref = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
     if (!ref.current || !active) return;
@@ -161,8 +174,8 @@ function Pulse({ position, color, active }: { position: [number, number, number]
     ref.current.scale.set(scale, scale, scale);
   });
   return (
-    <mesh ref={ref} position={position} rotation={[-Math.PI / 2, 0, 0]}>
-      <ringGeometry args={[0.2, 0.25, 40]} />
+    <mesh ref={ref} position={position} rotation={square ? SQUARE_FLAT : [-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[0.2, 0.25, square ? 4 : 40]} />
       <meshBasicMaterial color={color} transparent opacity={0.7} />
     </mesh>
   );
@@ -256,17 +269,17 @@ export function MineMap() {
                 onPointerOver={() => (document.body.style.cursor = 'pointer')}
                 onPointerOut={() => (document.body.style.cursor = '')}
               >
-                <sphereGeometry args={[0.13, 24, 24]} />
+                <boxGeometry args={[0.22, 0.22, 0.22]} />
                 <meshStandardMaterial color={TYPE_COLORS.station} emissive={TYPE_COLORS.station} emissiveIntensity={0.3} />
               </mesh>
-              <mesh position={[x, 0.03, z]} rotation={[-Math.PI / 2, 0, 0]}>
-                <ringGeometry args={[0.2, 0.235, 40]} />
+              <mesh position={[x, 0.03, z]} rotation={SQUARE_FLAT}>
+                <ringGeometry args={[0.2, 0.235, 4]} />
                 <meshBasicMaterial color={levelColor} />
               </mesh>
-              {st.level > 0 ? <Pulse position={[x, 0.03, z]} color={levelColor} active={!reduceMotion} /> : null}
+              {st.level > 0 ? <Pulse position={[x, 0.03, z]} color={levelColor} active={!reduceMotion} square /> : null}
               {selected ? (
-                <mesh position={[x, 0.035, z]} rotation={[-Math.PI / 2, 0, 0]}>
-                  <ringGeometry args={[0.29, 0.32, 40]} />
+                <mesh position={[x, 0.035, z]} rotation={SQUARE_FLAT}>
+                  <ringGeometry args={[0.29, 0.32, 4]} />
                   <meshBasicMaterial color="#ffffff" />
                 </mesh>
               ) : null}
@@ -308,7 +321,7 @@ export function MineMap() {
                 onPointerOut={() => (document.body.style.cursor = '')}
                 scale={selected ? 1.5 : 1}
               >
-                <octahedronGeometry args={[0.13]} />
+                <sphereGeometry args={[0.11, 20, 20]} />
                 <meshStandardMaterial color={TYPE_COLORS.mx6} emissive={TYPE_COLORS.mx6} emissiveIntensity={0.4} />
               </mesh>
             </group>
