@@ -129,7 +129,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       <input id="ex" type="range" min="0" max="1" step="0.001" value="0">
     </label>
     <button id="toggle" class="primary" type="button">Ensamblar</button>
-    <button id="spin" type="button" aria-pressed="false">Girar solo</button>
+    <button id="spin" type="button" aria-pressed="true">Giro automático</button>
     <button id="reset" type="button">Restablecer vista</button>
     <button id="lbl" type="button" aria-pressed="true">Etiquetas</button>
     <span class="note">Arrastra para rotar, rueda o pellizco para acercar. Pasa el cursor sobre una etiqueta para resaltar la pieza.</span>
@@ -166,7 +166,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   controls.enablePan = false;
   controls.minDistance = 7;
   controls.maxDistance = 34;
-  controls.autoRotateSpeed = 1.4;
+  controls.autoRotateSpeed = 2.0;
   controls.update();
 
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8a94a8, 0.95));
@@ -404,6 +404,31 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   var toggle = document.getElementById('toggle');
   slider.value = curT;
 
+  /* Giro automático: cada vuelta completa alterna entre explotado y ensamblado. */
+  controls.autoRotate = !reduce;
+  var lastAz = controls.getAzimuthalAngle();
+  var turned = 0;
+  var TWO_PI = Math.PI * 2;
+
+  function setGoal(v) {
+    goalT = v;
+    toggle.textContent = goalT > 0.5 ? 'Ensamblar' : 'Explotar';
+  }
+
+  function trackTurn() {
+    var az = controls.getAzimuthalAngle();
+    var d = az - lastAz;
+    if (d > Math.PI) d -= TWO_PI;
+    if (d < -Math.PI) d += TWO_PI;
+    lastAz = az;
+    if (!controls.autoRotate || dragging) return;
+    turned += Math.abs(d);
+    if (turned >= TWO_PI) {
+      turned -= TWO_PI;
+      setGoal(goalT > 0.5 ? 0 : 1);
+    }
+  }
+
   function applyT(t) {
     var e = t * t * (3 - 2 * t);
     Object.keys(parts).forEach(function (k) {
@@ -413,18 +438,18 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   }
   slider.addEventListener('input', function () {
     dragging = true;
-    curT = goalT = parseFloat(slider.value);
-    toggle.textContent = goalT > 0.5 ? 'Ensamblar' : 'Explotar';
+    curT = parseFloat(slider.value);
+    setGoal(curT);
   });
   slider.addEventListener('change', function () { dragging = false; });
   toggle.addEventListener('click', function () {
-    goalT = goalT > 0.5 ? 0 : 1;
-    toggle.textContent = goalT > 0.5 ? 'Ensamblar' : 'Explotar';
+    setGoal(goalT > 0.5 ? 0 : 1);
   });
   var spin = document.getElementById('spin');
   spin.addEventListener('click', function () {
     controls.autoRotate = !controls.autoRotate;
     spin.setAttribute('aria-pressed', String(controls.autoRotate));
+    spin.textContent = controls.autoRotate ? 'Giro automático' : 'Giro detenido';
   });
   document.getElementById('reset').addEventListener('click', function () {
     camera.position.copy(HOME_POS);
@@ -498,6 +523,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     }
     applyT(curT);
     controls.update();
+    trackTurn();
     renderer.render(scene, camera);
     if (!document.querySelector('.app').classList.contains('hide-labels')) layout();
   }
