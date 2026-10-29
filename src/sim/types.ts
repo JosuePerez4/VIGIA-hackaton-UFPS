@@ -25,6 +25,15 @@ export interface StationSnapshot {
   latencyMs: number;
   readings: Record<GasKey, GasReading>;
   level: Level;
+  /**
+   * Clima de la estación. La humedad relativa la mide el módulo de humedad del Trolex Sentro 8;
+   * la temperatura húmeda no la mide el dispositivo y se calcula a partir de temperatura y HR.
+   */
+  climate: {
+    tempC: number;
+    rh: number;
+    wetBulbC: number;
+  };
 }
 
 export interface WorkerSnapshot {

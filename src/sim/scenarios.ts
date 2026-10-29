@@ -6,7 +6,8 @@ export type ScenarioId =
   | 'aumento-co'
   | 'falla-ventilacion'
   | 'minero-critico'
-  | 'alerta-en-trabajo';
+  | 'alerta-en-trabajo'
+  | 'caida-oxigeno';
 
 export interface ScenarioStep {
   /** Segundos desde el inicio del escenario. */
@@ -102,6 +103,20 @@ export const SCENARIOS: ScenarioDef[] = [
       { at: 35, text: (t) => `Nivel 3 en ${t}.`, tone: 3 },
     ],
   },
+  {
+    id: 'caida-oxigeno',
+    name: 'Caída de oxígeno',
+    description: 'El O₂ baja en una estación y sus vecinas por desplazamiento de gas. Dispara alertas por el umbral de oxígeno.',
+    shortcut: '7',
+    needsTarget: true,
+    steps: [
+      { at: 0, text: (t) => `Inicio de escenario: caída de oxígeno en ${t}.`, tone: 0 },
+      { at: 20, text: (t) => `O₂ empieza a bajar en ${t}.`, tone: 0 },
+      { at: 35, text: (t) => `O₂ alcanza Nivel 1 en ${t}.`, tone: 1 },
+      { at: 78, text: (t) => `O₂ alcanza Nivel 2 en ${t}.`, tone: 2 },
+      { at: 108, text: (t) => `O₂ alcanza Nivel 3 en ${t}.`, tone: 3 },
+    ],
+  },
 ];
 
 export const SCENARIO_BY_ID: Record<ScenarioId, ScenarioDef> = Object.fromEntries(
@@ -134,6 +149,13 @@ export function gasEffect(ctx: EffectContext, gas: GasKey): number {
     // Sube hasta Nivel 2 (1.5 % con la línea base) sin llegar a Nivel 3.
     const intensity = [1, 0.4, 0.1][h] ?? 0;
     if (gas === 'CH4') return intensity * ramp(t, 15 + h * 10, 60, 1.45);
+  }
+
+  if (scenario === 'caida-oxigeno') {
+    // Desplazamiento de gas: el O₂ cae en el punto y se atenúa hacia los vecinos. Sin llegar a 14 %.
+    const intensity = [1, 0.5, 0.2][h] ?? 0;
+    const delay = h * 12;
+    if (gas === 'O2') return -intensity * ramp(t, 15 + delay, 90, 6.0);
   }
 
   if (scenario === 'aumento-co') {

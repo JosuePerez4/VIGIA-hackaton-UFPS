@@ -84,6 +84,23 @@ export function MapView() {
                   <dd className="tabular-nums text-ink">{station.latencyMs} ms</dd>
                 </div>
               </dl>
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <dt className="text-ink-muted">Temperatura</dt>
+                  <dd className="tabular-nums text-ink">{station.climate.tempC.toFixed(1)} °C</dd>
+                </div>
+                <div>
+                  <dt className="text-ink-muted">Humedad relativa</dt>
+                  <dd className="tabular-nums text-ink">{station.climate.rh.toFixed(0)} %</dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-ink-muted">Temperatura húmeda (calculada)</dt>
+                  <dd className="tabular-nums text-ink">{station.climate.wetBulbC.toFixed(1)} °C</dd>
+                </div>
+              </dl>
+              <p className="text-xs text-ink-muted">
+                Temperatura y humedad relativa: módulos del Trolex Sentro 8. La temperatura húmeda no la mide el dispositivo: se calcula con la fórmula de Stull a partir de ambas.
+              </p>
               <table className="w-full text-sm">
                 <caption className="sr-only">Lecturas de la estación {station.id}</caption>
                 <thead>

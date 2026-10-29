@@ -89,6 +89,9 @@ export function SystemView() {
                 <th scope="col" className="py-2 pr-4 font-medium">Galería</th>
                 <th scope="col" className="py-2 pr-4 font-medium">Comunicación</th>
                 <th scope="col" className="py-2 pr-4 font-medium">Batería</th>
+                <th scope="col" className="py-2 pr-4 text-right font-medium">Temperatura</th>
+                <th scope="col" className="py-2 pr-4 text-right font-medium">Humedad relativa</th>
+                <th scope="col" className="py-2 pr-4 text-right font-medium">Temp. húmeda (calc.)</th>
                 <th scope="col" className="py-2 pr-4 text-right font-medium">Latencia</th>
                 <th scope="col" className="py-2 font-medium">Última calibración</th>
               </tr>
@@ -109,6 +112,9 @@ export function SystemView() {
                         <span className={`tabular-nums ${lowBat ? 'text-lvl2' : 'text-ink'}`}>{st.battery.toFixed(0)} %</span>
                       </div>
                     </td>
+                    <td className="py-2.5 pr-4 text-right tabular-nums text-ink">{st.climate.tempC.toFixed(1)} °C</td>
+                    <td className="py-2.5 pr-4 text-right tabular-nums text-ink">{st.climate.rh.toFixed(0)} %</td>
+                    <td className="py-2.5 pr-4 text-right tabular-nums text-ink-muted">{st.climate.wetBulbC.toFixed(1)} °C</td>
                     <td className="py-2.5 pr-4 text-right tabular-nums text-ink">{st.latencyMs} ms</td>
                     <td className="py-2.5 tabular-nums text-ink-muted">{st.lastCalibration}</td>
                   </tr>

@@ -1,6 +1,7 @@
 import { DEFAULT_THRESHOLDS, GAS_ORDER, levelFor, type GasKey, type GasThreshold, type Level } from '@/config/thresholds';
 import { ADJACENCY, ENTRY_ID, LAST_CALIBRATION, NODE_BY_ID, STATION_BATTERY_START, STATION_IDS, WORKER_SEEDS, hopDistances } from './mine';
 import { SCENARIO_BY_ID, gasEffect, type ScenarioId } from './scenarios';
+import { wetBulbFromTempRh } from './climate';
 import type {
   AlertRecord,
   GasReading,
@@ -97,6 +98,8 @@ interface StationRuntime {
   x: number;
   y: number;
   factor: number;
+  /** Humedad relativa (%) medida por el módulo de humedad de la estación. */
+  rh: number;
   battery: number;
   latencyMs: number;
   lastCalibration: string;
@@ -170,6 +173,7 @@ export class SimEngine {
         x: node.x,
         y: node.y,
         factor: 0.9 + this.rng.next() * 0.2,
+        rh: 0,
         battery: STATION_BATTERY_START[id] ?? 70 + this.rng.next() * 25,
         latencyMs: 60,
         lastCalibration: LAST_CALIBRATION[index % LAST_CALIBRATION.length],
@@ -181,6 +185,8 @@ export class SimEngine {
         gasChannel: gasRecord(() => null),
         level: 0,
       };
+      // Humedad relativa de la galería: en el rango típico de minas húmedas (≈ 74–82 %).
+      station.rh = 78 + (station.factor - 1) * 40;
       for (const gas of GAS_ORDER) {
         const base = stationBase(gas, station.factor);
         station.raw[gas] = base;
@@ -250,6 +256,11 @@ export class SimEngine {
       lastCalibration: st.lastCalibration,
       latencyMs: st.latencyMs,
       level: st.level,
+      climate: {
+        tempC: st.raw.TEMP,
+        rh: st.rh,
+        wetBulbC: wetBulbFromTempRh(st.raw.TEMP, st.rh),
+      },
       readings: gasRecord<GasReading>((g) => ({
         raw: st.raw[g],
         avg: st.avg[g],
@@ -336,6 +347,8 @@ export class SimEngine {
         st.samples[gas].push(st.raw[gas]);
         if (st.samples[gas].length > SLOW_WINDOW) st.samples[gas].shift();
       }
+      const baseRh = 78 + (st.factor - 1) * 40;
+      st.rh = Math.min(99, Math.max(10, baseRh + (this.rng.next() * 2 - 1) * 1.5));
       st.latencyMs = Math.round(40 + this.rng.next() * 110);
       st.battery = Math.max(0, st.battery - 0.0015);
     }
