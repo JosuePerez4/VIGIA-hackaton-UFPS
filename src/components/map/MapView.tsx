@@ -9,8 +9,8 @@ import { useVigia } from '@/store/vigia-store';
 const MineMap = dynamic(() => import('./MineMap').then((m) => m.MineMap), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[34rem] items-center justify-center rounded-md border border-line bg-canvas text-ink-muted md:h-[42rem]">
-      Cargando mapa 3D…
+    <div className="flex h-[34rem] items-center justify-center rounded-md border border-line bg-canvas text-ink-muted md:h-[44rem]">
+      Cargando mapa…
     </div>
   ),
 });
@@ -112,10 +112,21 @@ export function MapView() {
                 <LevelPill level={worker.level} />
               </div>
               <p className="text-sm text-ink">
-                Ubicación: <span className="font-medium">{worker.stationId}</span>
-                {worker.evacuating ? <span className="text-lvl3"> · evacuando</span> : null}
+                Enlace MX6: <span className="font-medium">{worker.linkedStationId}</span>
               </p>
-              <p className="text-sm text-ink-muted">Batería {worker.battery} %</p>
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                {GAS_ORDER.filter((g) => g === 'CH4' || g === 'CO' || g === 'H2S' || g === 'O2').map((gas) => (
+                  <div key={gas}>
+                    <dt className="text-ink-muted">{thresholds[gas].label.split(' (')[0]}</dt>
+                    <dd className="tabular-nums text-ink">
+                      {worker.reading[gas].toFixed(thresholds[gas].decimals)} <span className="text-ink-muted">{thresholds[gas].unit}</span>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="text-sm text-ink-muted">
+                Batería {worker.battery} % · {worker.samples.toLocaleString('es-CO')} muestras enviadas
+              </p>
             </div>
           ) : (
             <p className="text-ink-muted">Ninguna selección.</p>
@@ -142,7 +153,7 @@ export function MapView() {
           </ul>
         </Panel>
 
-        <Panel title="Personal en la mina" description="Haz clic para seleccionar un minero y resaltarlo en el mapa.">
+        <Panel title="Mineros con MX6" description="Haz clic para resaltar un minero en el mapa.">
           <ul className="grid max-h-64 gap-1 overflow-y-auto pr-1">
             {workers.map((w) => (
               <li key={w.id}>
@@ -156,7 +167,7 @@ export function MapView() {
                 >
                   <span>
                     {w.name}
-                    <span className="block text-xs">{w.exited ? 'Evacuado' : w.stationId}</span>
+                    <span className="block text-xs">Enlace {w.linkedStationId}</span>
                   </span>
                   <LevelPill level={w.level} compact />
                 </button>

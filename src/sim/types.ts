@@ -16,9 +16,9 @@ export interface GasReading {
 export interface StationSnapshot {
   id: string;
   name: string;
-  gallery: string;
+  area: string;
   x: number;
-  z: number;
+  y: number;
   online: boolean;
   battery: number;
   lastCalibration: string;
@@ -33,16 +33,19 @@ export interface WorkerSnapshot {
   role: string;
   mx6: string;
   battery: number;
-  stationId: string;
+  /** Estación a la que el MX6 está enlazado en este momento (la más cercana). */
+  linkedStationId: string;
+  /** Posición en unidades del mapa (viewBox 390 × 660). */
   x: number;
-  z: number;
+  y: number;
+  /** Nivel del punto donde está el minero. */
   level: Level;
-  /** Exposición promedio por gas desde el inicio del turno (tipo TWA, unidad del gas). */
+  /** Lecturas actuales del MX6 en su punto. */
+  reading: Record<GasKey, number>;
+  /** Exposición promedio por gas desde el inicio del turno (tipo TWA). */
   twa: Record<GasKey, number>;
-  evacuating: boolean;
-  exited: boolean;
-  /** Ruta de evacuación hasta la entrada (ids de nodo). */
-  route: string[];
+  /** Número de muestras enviadas por el MX6 en el turno. */
+  samples: number;
 }
 
 export interface AlertRecord {
@@ -53,7 +56,6 @@ export interface AlertRecord {
   level: Level;
   value: number;
   channel: 'rápido' | 'lento';
-  action: string;
   status: 'activa' | 'escalada' | 'resuelta';
   acknowledged: boolean;
 }
@@ -90,7 +92,6 @@ export interface MineSnapshot {
   representative: Record<GasKey, Representative>;
   mineLevel: Level;
   emergency: boolean;
-  latched: { powerCut: boolean; fansMax: boolean; evacuation: boolean };
   system: {
     connection: 'Conectado';
     broker: 'Activo';

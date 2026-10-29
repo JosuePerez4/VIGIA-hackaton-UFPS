@@ -33,7 +33,7 @@ export function SimulationView() {
       <div className="space-y-6">
         <Panel
           title="Escenarios"
-          description="Cada escenario actualiza el panel, el mapa, las alertas y el personal a la vez. Atajos durante la presentación: teclas 1 a 5, espacio para pausar, R para reiniciar."
+          description="Cada escenario actualiza el panel, el mapa, las alertas y el personal a la vez. Atajos durante la presentación: teclas 1 a 6, espacio para pausar, R para reiniciar."
         >
           <div className="grid gap-3 md:grid-cols-2">
             {SCENARIOS.map((item) => {

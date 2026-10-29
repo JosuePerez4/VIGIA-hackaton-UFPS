@@ -1,59 +1,101 @@
-/** Geometría estática de la mina simulada. Unidades: metros. */
+/**
+ * Geometría de la mina tomada de `mapa_mina_estaciones.svg` (viewBox 390 × 660).
+ * Coordenadas en unidades del SVG: la cuadrícula del plano avanza 60 px en X y 70 px en Y.
+ */
 
-export type GalleryId = 'principal' | 'norte' | 'sur' | 'este';
-
-export const GALLERY_NAMES: Record<GalleryId, string> = {
-  principal: 'Galería principal',
-  norte: 'Ramal norte',
-  sur: 'Ramal sur',
-  este: 'Ramal este',
-};
+export type Area = 'Galería' | 'Refugio' | 'Bombeo' | 'Frente sur' | 'Sector este';
 
 export interface MineNode {
   id: string;
   name: string;
-  gallery: GalleryId | 'entrada';
+  area: Area;
   x: number;
-  z: number;
+  y: number;
 }
 
 export const ENTRY_ID = 'ENT-00';
 
-const nodes: MineNode[] = [
-  { id: ENTRY_ID, name: 'Entrada · dispositivo de procesamiento', gallery: 'entrada', x: 0, z: 0 },
+const NODE_DEFS: [id: string, x: number, y: number, area: Area][] = [
+  ['EST-01', 190, 100, 'Galería'],
+  ['EST-02', 190, 160, 'Galería'],
+  ['EST-03', 190, 220, 'Galería'],
+  ['EST-04', 190, 290, 'Galería'],
+  ['EST-05', 190, 360, 'Galería'],
+  ['EST-06', 190, 430, 'Galería'],
+  ['EST-07', 190, 500, 'Galería'],
+  ['EST-08', 190, 570, 'Frente sur'],
+  ['EST-09', 130, 220, 'Galería'],
+  ['EST-10', 70, 220, 'Galería'],
+  ['EST-11', 70, 290, 'Galería'],
+  ['EST-12', 70, 360, 'Bombeo'],
+  ['EST-13', 130, 360, 'Galería'],
+  ['EST-14', 250, 220, 'Galería'],
+  ['EST-15', 310, 220, 'Galería'],
+  ['EST-16', 310, 160, 'Galería'],
+  ['EST-17', 310, 100, 'Refugio'],
+  ['EST-18', 250, 360, 'Galería'],
+  ['EST-19', 310, 360, 'Galería'],
+  ['EST-20', 310, 430, 'Sector este'],
+  ['EST-21', 130, 430, 'Galería'],
 ];
 
-function addStation(gallery: GalleryId, x: number, z: number) {
-  const index = nodes.length;
-  nodes.push({
-    id: `EST-${String(index).padStart(2, '0')}`,
-    name: `Estación ${String(index).padStart(2, '0')} · ${GALLERY_NAMES[gallery]}`,
-    gallery,
+/** Galerías: pares de nodos conectados (mismo trazo que el mapa). */
+const EDGE_DEFS: [string, string][] = [
+  [ENTRY_ID, 'EST-01'],
+  ['EST-01', 'EST-02'],
+  ['EST-02', 'EST-03'],
+  ['EST-03', 'EST-04'],
+  ['EST-04', 'EST-05'],
+  ['EST-05', 'EST-06'],
+  ['EST-06', 'EST-07'],
+  ['EST-07', 'EST-08'],
+  ['EST-03', 'EST-09'],
+  ['EST-09', 'EST-10'],
+  ['EST-10', 'EST-11'],
+  ['EST-11', 'EST-12'],
+  ['EST-12', 'EST-13'],
+  ['EST-13', 'EST-05'],
+  ['EST-03', 'EST-14'],
+  ['EST-14', 'EST-15'],
+  ['EST-15', 'EST-16'],
+  ['EST-16', 'EST-17'],
+  ['EST-05', 'EST-18'],
+  ['EST-18', 'EST-19'],
+  ['EST-19', 'EST-20'],
+  ['EST-06', 'EST-21'],
+];
+
+const entry: MineNode = { id: ENTRY_ID, name: 'Entrada · Dispositivo de procesamiento', area: 'Galería', x: 190, y: 40 };
+
+export const NODES: MineNode[] = [
+  entry,
+  ...NODE_DEFS.map(([id, x, y, area]) => ({
+    id,
+    name: `Estación ${id.slice(4)} · ${area}`,
+    area,
     x,
-    z,
-  });
+    y,
+  })),
+];
+
+export const STATION_IDS = NODE_DEFS.map(([id]) => id);
+export const NODE_BY_ID: Record<string, MineNode> = Object.fromEntries(NODES.map((n) => [n.id, n]));
+
+/** Zonas del mapa (rectángulos del SVG). Son referencia visual, no afectan la simulación. */
+export const ZONES = [
+  { name: 'Refugio', x: 264, y: 64, w: 92, h: 64, color: '#4d5a1a' },
+  { name: 'Bombeo', x: 24, y: 334, w: 84, h: 52, color: '#1f4057' },
+  { name: 'Frente sur', x: 124, y: 534, w: 132, h: 66, color: '#4d5a1a' },
+  { name: 'Sector este', x: 264, y: 404, w: 92, h: 54, color: '#2c3b4d' },
+] as const;
+
+export const ADJACENCY: Record<string, string[]> = Object.fromEntries(NODES.map((n) => [n.id, [] as string[]]));
+for (const [a, b] of EDGE_DEFS) {
+  ADJACENCY[a].push(b);
+  ADJACENCY[b].push(a);
 }
 
-// Galería principal: 9 estaciones cada 40 m desde la entrada.
-for (let i = 1; i <= 9; i++) addStation('principal', 40 * i, 0);
-// Ramales: 3 + 3 + 2 estaciones, también cada 40 m.
-for (let j = 1; j <= 3; j++) addStation('norte', 160, -40 * j);
-for (let j = 1; j <= 3; j++) addStation('sur', 240, 40 * j);
-for (let j = 1; j <= 2; j++) addStation('este', 360, -40 * j);
-
-export const NODES: MineNode[] = nodes;
-export const STATION_IDS = nodes.filter((n) => n.id !== ENTRY_ID).map((n) => n.id);
-export const NODE_BY_ID: Record<string, MineNode> = Object.fromEntries(nodes.map((n) => [n.id, n]));
-
-/** Adyacencia por distancia (≤ 40 m): sirve para propagación de gas y rutas de evacuación. */
-export const ADJACENCY: Record<string, string[]> = Object.fromEntries(
-  nodes.map((a) => [
-    a.id,
-    nodes
-      .filter((b) => b.id !== a.id && Math.hypot(a.x - b.x, a.z - b.z) <= 40.5)
-      .map((b) => b.id),
-  ]),
-);
+export const EDGES: [string, string][] = EDGE_DEFS;
 
 export function hopDistances(from: string): Record<string, number> {
   const dist: Record<string, number> = { [from]: 0 };
@@ -70,26 +112,6 @@ export function hopDistances(from: string): Record<string, number> {
   return dist;
 }
 
-/** Ruta más corta entre dos nodos (incluye origen y destino). */
-export function shortestPath(from: string, to: string): string[] {
-  const prev: Record<string, string | null> = { [from]: null };
-  const queue = [from];
-  while (queue.length) {
-    const current = queue.shift() as string;
-    if (current === to) break;
-    for (const next of ADJACENCY[current] ?? []) {
-      if (!(next in prev)) {
-        prev[next] = current;
-        queue.push(next);
-      }
-    }
-  }
-  if (!(to in prev)) return [];
-  const path: string[] = [];
-  for (let node: string | null = to; node !== null; node = prev[node]) path.unshift(node);
-  return path;
-}
-
 export interface WorkerSeed {
   id: string;
   name: string;
@@ -104,13 +126,13 @@ export const WORKER_SEEDS: WorkerSeed[] = [
   { id: 'MIN-03', name: 'Luis Herrera', role: 'Sostenedor', mx6: 'MX6-1003', start: 'EST-06' },
   { id: 'MIN-04', name: 'Carmen Ospina', role: 'Ingeniera de turno', mx6: 'MX6-1004', start: 'EST-08' },
   { id: 'MIN-05', name: 'Jorge Valencia', role: 'Ayudante de galería', mx6: 'MX6-1005', start: 'EST-10' },
-  { id: 'MIN-06', name: 'Paula Cárdenas', role: 'Electricista', mx6: 'MX6-1006', start: 'EST-11' },
-  { id: 'MIN-07', name: 'Mauricio Peña', role: 'Operador de ventilación', mx6: 'MX6-1007', start: 'EST-13' },
-  { id: 'MIN-08', name: 'Sandra Quintero', role: 'Supervisora de SST', mx6: 'MX6-1008', start: 'EST-15' },
-  { id: 'MIN-09', name: 'Hernán Londoño', role: 'Mecánico', mx6: 'MX6-1009', start: 'EST-16' },
-  { id: 'MIN-10', name: 'Yeison Ramírez', role: 'Topógrafo', mx6: 'MX6-1010', start: 'EST-17' },
+  { id: 'MIN-06', name: 'Paula Cárdenas', role: 'Electricista', mx6: 'MX6-1006', start: 'EST-12' },
+  { id: 'MIN-07', name: 'Mauricio Peña', role: 'Operador de ventilación', mx6: 'MX6-1007', start: 'EST-14' },
+  { id: 'MIN-08', name: 'Sandra Quintero', role: 'Supervisora de SST', mx6: 'MX6-1008', start: 'EST-16' },
+  { id: 'MIN-09', name: 'Hernán Londoño', role: 'Mecánico', mx6: 'MX6-1009', start: 'EST-18' },
+  { id: 'MIN-10', name: 'Yeison Ramírez', role: 'Topógrafo', mx6: 'MX6-1010', start: 'EST-21' },
 ];
 
-/** Batería inicial y calibración por estación (datos simulados). */
+/** Batería inicial de estaciones (una baja para mostrar alertas de mantenimiento). */
 export const STATION_BATTERY_START: Record<string, number> = { 'EST-05': 18 };
 export const LAST_CALIBRATION = ['2026-10-02', '2026-10-09', '2026-10-14', '2026-10-21'];

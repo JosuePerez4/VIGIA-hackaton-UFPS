@@ -1,23 +1,5 @@
-import {
-  DEFAULT_THRESHOLDS,
-  GAS_ORDER,
-  LEVEL_ACTIONS,
-  levelFor,
-  type GasKey,
-  type GasThreshold,
-  type Level,
-} from '@/config/thresholds';
-import {
-  ADJACENCY,
-  ENTRY_ID,
-  LAST_CALIBRATION,
-  NODE_BY_ID,
-  STATION_BATTERY_START,
-  STATION_IDS,
-  WORKER_SEEDS,
-  hopDistances,
-  shortestPath,
-} from './mine';
+import { DEFAULT_THRESHOLDS, GAS_ORDER, levelFor, type GasKey, type GasThreshold, type Level } from '@/config/thresholds';
+import { ADJACENCY, ENTRY_ID, LAST_CALIBRATION, NODE_BY_ID, STATION_BATTERY_START, STATION_IDS, WORKER_SEEDS, hopDistances } from './mine';
 import { SCENARIO_BY_ID, gasEffect, type ScenarioId } from './scenarios';
 import type {
   AlertRecord,
@@ -42,7 +24,7 @@ const BASELINE: Record<GasKey, number> = {
   AIR: 1.1,
 };
 
-/** Cuánto varía la línea base entre estaciones (O₂ y temperatura casi no varían en la mina real). */
+/** Cuánto varía la línea base entre estaciones (O₂ y temperatura casi no varían). */
 const VARIATION: Record<GasKey, number> = {
   CH4: 1,
   CO: 1,
@@ -54,7 +36,6 @@ const VARIATION: Record<GasKey, number> = {
   AIR: 0.5,
 };
 
-/** Línea base de una estación: el factor de estación solo afecta según VARIATION. */
 const stationBase = (gas: GasKey, factor: number) => BASELINE[gas] * (1 + (factor - 1) * VARIATION[gas]);
 
 /** Ruido de medición por gas. */
@@ -77,8 +58,8 @@ const SERIES_LENGTH = 300;
 const TIMELINE_LENGTH = 200;
 const ALERT_LENGTH = 300;
 const START_SECONDS = 6 * 3600; // turno inicia a las 06:00
-const MOVE_SECONDS = 15; // segundos por tramo en movimiento normal
-const EVAC_SECONDS = 6; // segundos por tramo durante evacuación
+/** Segundos que tarda un minero en recorrer un tramo de galería. */
+const WALK_SECONDS = 10;
 
 class Rng {
   private state: number;
@@ -87,7 +68,7 @@ class Rng {
     this.state = seed >>> 0 || 1;
   }
 
-  /** mulberry32: generador determinista, mismo escenario = misma secuencia. */
+  /** mulberry32: determinista; mismo escenario = misma secuencia (demo repetible). */
   next(): number {
     this.state = (this.state + 0x6d2b79f5) | 0;
     let t = Math.imul(this.state ^ (this.state >>> 15), 1 | this.state);
@@ -112,9 +93,9 @@ export function clockFromElapsed(elapsed: number): string {
 interface StationRuntime {
   id: string;
   name: string;
-  gallery: string;
+  area: string;
   x: number;
-  z: number;
+  y: number;
   factor: number;
   battery: number;
   latencyMs: number;
@@ -128,20 +109,18 @@ interface StationRuntime {
   level: Level;
 }
 
+/** Minero que camina por las galerías con su MX6. */
 interface WorkerRuntime {
   id: string;
   name: string;
   role: string;
   mx6: string;
   battery: number;
-  stationId: string;
+  from: string;
   to: string;
+  prev: string | null;
   progress: number;
-  idleIn: number;
-  evacuating: boolean;
-  exited: boolean;
-  route: string[];
-  routeIdx: number;
+  samples: number;
   exposure: Record<GasKey, number>;
 }
 
@@ -159,7 +138,6 @@ export class SimEngine {
   private activeByKey = new Map<string, AlertRecord>();
   private timeline: TimelineEntry[] = [];
   private firedSteps = new Set<number>();
-  private latched = { powerCut: false, fansMax: false, evacuation: false };
   private series: Record<GasKey, SeriesPoint[]> = gasRecord(() => []);
   private representative = {} as Record<GasKey, Representative>;
   private hopsTarget: Record<string, number> = {};
@@ -174,7 +152,7 @@ export class SimEngine {
     this.reset('normal', this.target);
   }
 
-  /** Reinicia la mina con un escenario. Mismo seed = misma secuencia (demo repetible). */
+  /** Reinicia la mina con un escenario. */
   reset(scenario: ScenarioId, target: string) {
     this.rng = new Rng(this.seed);
     this.elapsed = 0;
@@ -188,9 +166,9 @@ export class SimEngine {
       const station: StationRuntime = {
         id,
         name: node.name,
-        gallery: node.gallery,
+        area: node.area,
         x: node.x,
-        z: node.z,
+        y: node.y,
         factor: 0.9 + this.rng.next() * 0.2,
         battery: STATION_BATTERY_START[id] ?? 70 + this.rng.next() * 25,
         latencyMs: 60,
@@ -212,28 +190,27 @@ export class SimEngine {
     });
     this.stationById = Object.fromEntries(this.stations.map((s) => [s.id, s]));
 
-    this.workers = WORKER_SEEDS.map((seed) => ({
-      id: seed.id,
-      name: seed.name,
-      role: seed.role,
-      mx6: seed.mx6,
-      battery: 60 + this.rng.next() * 35,
-      stationId: seed.start,
-      to: seed.start,
-      progress: 0,
-      idleIn: 5 + Math.floor(this.rng.next() * 20),
-      evacuating: false,
-      exited: false,
-      route: [],
-      routeIdx: 0,
-      exposure: gasRecord(() => 0),
-    }));
+    this.workers = WORKER_SEEDS.map((seed) => {
+      const first = this.pickNeighbor(seed.start, null);
+      return {
+        id: seed.id,
+        name: seed.name,
+        role: seed.role,
+        mx6: seed.mx6,
+        battery: 60 + this.rng.next() * 35,
+        from: seed.start,
+        to: first,
+        prev: null,
+        progress: this.rng.next() * 0.5,
+        samples: 0,
+        exposure: gasRecord(() => 0),
+      };
+    });
 
     this.alerts = [];
     this.activeByKey.clear();
     this.timeline = [];
     this.firedSteps.clear();
-    this.latched = { powerCut: false, fansMax: false, evacuation: false };
     this.series = gasRecord(() => []);
     this.queue = 0;
     this.processingMs = 60;
@@ -265,9 +242,9 @@ export class SimEngine {
     const stations: StationSnapshot[] = this.stations.map((st) => ({
       id: st.id,
       name: st.name,
-      gallery: st.gallery,
+      area: st.area,
       x: st.x,
-      z: st.z,
+      y: st.y,
       online: true,
       battery: Math.round(st.battery * 10) / 10,
       lastCalibration: st.lastCalibration,
@@ -283,8 +260,9 @@ export class SimEngine {
     }));
 
     const workers: WorkerSnapshot[] = this.workers.map((w) => {
-      const from = NODE_BY_ID[w.stationId];
-      const to = NODE_BY_ID[w.to] ?? from;
+      const linked = this.linkedStation(w);
+      const from = NODE_BY_ID[w.from];
+      const to = NODE_BY_ID[w.to];
       const seconds = Math.max(this.elapsed, 1);
       return {
         id: w.id,
@@ -292,14 +270,13 @@ export class SimEngine {
         role: w.role,
         mx6: w.mx6,
         battery: Math.round(w.battery),
-        stationId: w.stationId,
+        linkedStationId: linked.id,
         x: from.x + (to.x - from.x) * w.progress,
-        z: from.z + (to.z - from.z) * w.progress,
-        level: this.stationById[w.stationId]?.level ?? 0,
+        y: from.y + (to.y - from.y) * w.progress,
+        level: linked.level,
+        reading: gasRecord((g) => linked.raw[g]),
         twa: gasRecord((g) => w.exposure[g] / seconds),
-        evacuating: w.evacuating,
-        exited: w.exited,
-        route: w.route,
+        samples: w.samples,
       };
     });
 
@@ -316,7 +293,6 @@ export class SimEngine {
       representative: { ...this.representative },
       mineLevel: Math.max(0, ...this.stations.map((s) => s.level)) as Level,
       emergency: this.alerts.some((a) => a.status === 'activa' && a.level === 3),
-      latched: { ...this.latched },
       system: {
         connection: 'Conectado',
         broker: 'Activo',
@@ -333,13 +309,12 @@ export class SimEngine {
     this.sample();
     this.analyze();
     this.updateAlerts();
-    this.latchEmergency();
-    for (const w of this.workers) this.moveWorker(w);
+    for (const w of this.workers) this.walk(w);
     this.updateSeries();
     this.updateSystem();
   }
 
-  /** Genera lecturas crudas: línea base + ruido + aporte del escenario. */
+  /** Lecturas crudas: línea base + ruido + aporte del escenario. */
   private sample() {
     for (const st of this.stations) {
       const hopsFromTarget = this.hopsTarget[st.id] ?? 99;
@@ -434,7 +409,6 @@ export class SimEngine {
           level,
           value: st.avg[gas],
           channel,
-          action: LEVEL_ACTIONS[level as Exclude<Level, 0>],
           status: 'activa',
           acknowledged: false,
         };
@@ -452,66 +426,34 @@ export class SimEngine {
     }
   }
 
-  private latchEmergency() {
-    const hasLevel3 = this.alerts.some((a) => a.status === 'activa' && a.level === 3);
-    if (!hasLevel3 || this.latched.powerCut) return;
-    this.latched = { powerCut: true, fansMax: true, evacuation: true };
-    this.pushTimeline('Nivel 3: corte eléctrico, ventiladores al máximo y evacuación iniciada.', 3);
+  /** Estación enlazada al MX6: la del extremo más cercano del tramo que recorre (nunca la entrada). */
+  private linkedStation(w: WorkerRuntime): StationRuntime {
+    const candidate = w.progress < 0.5 ? w.from : w.to;
+    const id = candidate === ENTRY_ID ? w.from : candidate;
+    return this.stationById[id] ?? this.stations[0];
   }
 
-  private moveWorker(w: WorkerRuntime) {
-    if (w.exited) return;
-
-    const here = this.stationById[w.stationId];
-    if (!w.evacuating && ((here?.level ?? 0) >= 3 || this.latched.evacuation)) {
-      w.evacuating = true;
-      w.route = shortestPath(w.stationId, ENTRY_ID);
-      w.routeIdx = 0;
-      w.progress = 0;
-      w.to = w.route[1] ?? w.stationId;
-      if (w.stationId === ENTRY_ID || w.route.length < 2) {
-        w.exited = true;
-        return;
-      }
-    }
-
+  /** Recorrido continuo: al llegar a un nodo elige un tramo distinto al anterior. */
+  private walk(w: WorkerRuntime) {
     w.battery = Math.max(0, w.battery - 0.003);
-    if (here) {
-      for (const gas of GAS_ORDER) w.exposure[gas] += here.raw[gas];
-    }
+    const linked = this.linkedStation(w);
+    for (const gas of GAS_ORDER) w.exposure[gas] += linked.raw[gas];
+    w.samples += 1;
 
-    if (w.evacuating) {
-      w.progress += 1 / EVAC_SECONDS;
-      if (w.progress < 1) return;
-      w.progress = 0;
-      w.stationId = w.to;
-      w.routeIdx += 1;
-      if (w.stationId === ENTRY_ID) {
-        w.exited = true;
-        w.to = w.stationId;
-        return;
-      }
-      w.to = w.route[w.routeIdx + 1] ?? w.stationId;
-      return;
-    }
+    w.progress += 1 / WALK_SECONDS;
+    if (w.progress < 1) return;
 
-    if (w.to === w.stationId) {
-      w.idleIn -= 1;
-      if (w.idleIn > 0) return;
-      const options = (ADJACENCY[w.stationId] ?? []).filter((id) => id !== ENTRY_ID);
-      const next = options[Math.floor(this.rng.next() * options.length)] ?? w.stationId;
-      w.to = next;
-      w.progress = 0;
-      if (next === w.stationId) w.idleIn = 10;
-      return;
-    }
+    w.progress = 0;
+    w.prev = w.from;
+    w.from = w.to;
+    w.to = this.pickNeighbor(w.from, w.prev);
+  }
 
-    w.progress += 1 / MOVE_SECONDS;
-    if (w.progress >= 1) {
-      w.stationId = w.to;
-      w.progress = 0;
-      w.idleIn = 10 + Math.floor(this.rng.next() * 25);
-    }
+  /** Vecino elegido al azar, sin entrar a la entrada del mina y evitando volver al tramo anterior. */
+  private pickNeighbor(node: string, previous: string | null): string {
+    const options = (ADJACENCY[node] ?? []).filter((id) => id !== ENTRY_ID && id !== previous);
+    const pool = options.length > 0 ? options : (ADJACENCY[node] ?? []).filter((id) => id !== ENTRY_ID);
+    return pool[Math.floor(this.rng.next() * pool.length)] ?? node;
   }
 
   private updateSeries() {
@@ -527,8 +469,7 @@ export class SimEngine {
     const drift = this.rng.next();
     if (drift < 0.3) this.queue = Math.min(4, this.queue + 1);
     else if (drift > 0.7) this.queue = Math.max(0, this.queue - 1);
-    const emergency = this.latched.powerCut;
-    this.processingMs = Math.round(45 + this.rng.next() * 35 + (emergency ? 20 : 0));
+    this.processingMs = Math.round(45 + this.rng.next() * 35);
   }
 
   private fireScenarioSteps() {

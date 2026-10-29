@@ -1,6 +1,12 @@
 import type { GasKey } from '@/config/thresholds';
 
-export type ScenarioId = 'normal' | 'fuga-metano' | 'aumento-co' | 'falla-ventilacion' | 'minero-critico';
+export type ScenarioId =
+  | 'normal'
+  | 'fuga-metano'
+  | 'aumento-co'
+  | 'falla-ventilacion'
+  | 'minero-critico'
+  | 'alerta-en-trabajo';
 
 export interface ScenarioStep {
   /** Segundos desde el inicio del escenario. */
@@ -23,10 +29,10 @@ export const SCENARIOS: ScenarioDef[] = [
   {
     id: 'normal',
     name: 'Operación normal',
-    description: 'Turno sin eventos. Línea base de todas las estaciones.',
+    description: 'Turno sin eventos. Los mineros caminan por la mina y su MX6 mide el gas en cada punto.',
     shortcut: '1',
     needsTarget: false,
-    steps: [{ at: 0, text: () => 'Inicio de turno. Operación normal en todas las estaciones.', tone: 0 }],
+    steps: [{ at: 0, text: () => 'Inicio de turno. Operación normal y mineros en recorrido.', tone: 0 }],
   },
   {
     id: 'fuga-metano',
@@ -39,15 +45,29 @@ export const SCENARIOS: ScenarioDef[] = [
       { at: 8, text: (t) => `Canal rápido: aumento de CH₄ detectado en ${t}.`, tone: 1 },
       { at: 30, text: (t) => `Promedio móvil de CH₄ en Nivel 1 en ${t}.`, tone: 1 },
       { at: 45, text: () => 'Propagación del gas a estaciones adyacentes.', tone: 2 },
-      { at: 68, text: (t) => `CH₄ alcanza Nivel 2 en ${t}. Notificación a SST.`, tone: 2 },
-      { at: 85, text: (t) => `CH₄ alcanza Nivel 3 en ${t}. Acciones automáticas activas.`, tone: 3 },
+      { at: 68, text: (t) => `CH₄ alcanza Nivel 2 en ${t}.`, tone: 2 },
+      { at: 85, text: (t) => `CH₄ alcanza Nivel 3 en ${t}.`, tone: 3 },
+    ],
+  },
+  {
+    id: 'alerta-en-trabajo',
+    name: 'Alerta durante el trabajo',
+    description: 'Mientras los mineros siguen trabajando, una estación sube a Nivel 2 y el MX6 de quien pasa por ahí lo registra.',
+    shortcut: '3',
+    needsTarget: true,
+    steps: [
+      { at: 0, text: () => 'Inicio: mineros trabajando, MX6 midiendo en recorrido.', tone: 0 },
+      { at: 15, text: (t) => `Inicio de elevación de CH₄ en ${t}.`, tone: 0 },
+      { at: 18, text: (t) => `Canal rápido dispara alerta en ${t}.`, tone: 1 },
+      { at: 50, text: (t) => `CH₄ en Nivel 1 (promedio móvil) en ${t}.`, tone: 1 },
+      { at: 90, text: (t) => `Alerta de Nivel 2 en ${t}.`, tone: 2 },
     ],
   },
   {
     id: 'aumento-co',
     name: 'Aumento rápido de CO',
     description: 'Pico de monóxido de carbono. El canal rápido reacciona antes que el registro oficial.',
-    shortcut: '3',
+    shortcut: '4',
     needsTarget: true,
     steps: [
       { at: 0, text: (t) => `Inicio de escenario: aumento rápido de CO en ${t}.`, tone: 0 },
@@ -60,26 +80,26 @@ export const SCENARIOS: ScenarioDef[] = [
     id: 'falla-ventilacion',
     name: 'Falla de ventilación',
     description: 'La velocidad del aire cae en toda la mina y los gases se acumulan.',
-    shortcut: '4',
+    shortcut: '5',
     needsTarget: false,
     steps: [
       { at: 0, text: () => 'Inicio de escenario: falla de ventilación principal.', tone: 0 },
       { at: 24, text: () => 'Velocidad del aire por debajo de Nivel 1 en varias galerías.', tone: 1 },
-      { at: 40, text: () => 'Velocidad del aire en Nivel 3. Acciones automáticas activas.', tone: 3 },
+      { at: 40, text: () => 'Velocidad del aire en Nivel 3.', tone: 3 },
       { at: 90, text: () => 'Acumulación de CH₄ y CO en galerías de cabecera.', tone: 2 },
     ],
   },
   {
     id: 'minero-critico',
     name: 'Minero en zona crítica',
-    description: 'Exposición a H₂S y CO en la estación donde se encuentra un minero. Muestra la ruta de evacuación.',
-    shortcut: '5',
+    description: 'Exposición a H₂S y CO en la estación elegida, donde hay mineros trabajando.',
+    shortcut: '6',
     needsTarget: true,
     steps: [
       { at: 0, text: (t) => `Inicio de escenario: zona crítica en ${t}.`, tone: 0 },
       { at: 8, text: (t) => `H₂S y CO en aumento en ${t}.`, tone: 1 },
       { at: 22, text: (t) => `Minero en ${t} supera Nivel 2 de exposición.`, tone: 2 },
-      { at: 35, text: (t) => `Nivel 3 en ${t}. Evacuación del personal de la zona.`, tone: 3 },
+      { at: 35, text: (t) => `Nivel 3 en ${t}.`, tone: 3 },
     ],
   },
 ];
@@ -108,6 +128,12 @@ export function gasEffect(ctx: EffectContext, gas: GasKey): number {
     const delay = h * 15;
     if (gas === 'CH4') return intensity * ramp(t, 5 + delay, 90, 2.6);
     if (gas === 'O2') return -intensity * ramp(t, 10 + delay, 90, 1.2);
+  }
+
+  if (scenario === 'alerta-en-trabajo') {
+    // Sube hasta Nivel 2 (1.5 % con la línea base) sin llegar a Nivel 3.
+    const intensity = [1, 0.4, 0.1][h] ?? 0;
+    if (gas === 'CH4') return intensity * ramp(t, 15 + h * 10, 60, 1.45);
   }
 
   if (scenario === 'aumento-co') {

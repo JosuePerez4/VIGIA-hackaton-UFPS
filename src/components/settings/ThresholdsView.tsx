@@ -1,7 +1,7 @@
 'use client';
 
 import { Panel, buttonIdle } from '@/components/ui/primitives';
-import { GAS_ORDER, LEVEL_ACTIONS, type GasKey } from '@/config/thresholds';
+import { GAS_ORDER, type GasKey } from '@/config/thresholds';
 import { useVigia } from '@/store/vigia-store';
 
 type NumericField = 'level1' | 'level2' | 'level3' | 'fastRate';
@@ -69,17 +69,6 @@ export function ThresholdsView() {
             </tbody>
           </table>
         </div>
-      </Panel>
-
-      <Panel title="Acción asociada a cada nivel" description="Así responde el sistema cuando un valor cruza un umbral.">
-        <ol className="grid gap-3 md:grid-cols-3">
-          {([1, 2, 3] as const).map((level) => (
-            <li key={level} className="rounded-md border border-line p-4">
-              <p className="font-medium text-ink">Nivel {level}</p>
-              <p className="mt-1 text-sm text-ink-muted">{LEVEL_ACTIONS[level]}</p>
-            </li>
-          ))}
-        </ol>
       </Panel>
     </div>
   );

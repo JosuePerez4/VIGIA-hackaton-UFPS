@@ -24,7 +24,6 @@ export function PanelView() {
   const selectGas = useVigia((s) => s.selectGas);
 
   const online = stations.filter((s) => s.online).length;
-  const inside = workers.filter((w) => !w.exited).length;
   const activeAlerts = alerts.filter((a) => a.status === 'activa').length;
 
   const recent = [...timeline].reverse().slice(0, 8);
@@ -33,7 +32,7 @@ export function PanelView() {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Metric label="Estado general de la mina" value={LEVEL_META[mineLevel].mineLabel} tone={mineLevel} />
-        <Metric label="Mineros dentro" value={inside} unit={`de ${workers.length}`} />
+        <Metric label="Mineros en recorrido" value={workers.length} footnote="Cada uno con su MX6 midiendo" />
         <Metric label="Alertas activas" value={activeAlerts} tone={activeAlerts > 0 ? maxActiveLevel(alerts) : 0} />
         <Metric label="Estaciones en línea" value={online} unit={`de ${stations.length}`} />
       </div>

@@ -44,13 +44,6 @@ export const LEVEL_META: Record<Level, { label: string; mineLabel: string }> = {
   3: { label: 'Nivel 3 · Emergencia', mineLabel: 'Emergencia' },
 };
 
-/** Acción automática asociada a cada nivel (descripción del flujo real del sistema). */
-export const LEVEL_ACTIONS: Record<Exclude<Level, 0>, string> = {
-  1: 'Alerta local en estación y MX6',
-  2: 'Alerta en plataforma y notificación al área de SST',
-  3: 'Corte eléctrico, ventiladores al máximo y evacuación',
-};
-
 export function levelFor(value: number, threshold: GasThreshold): Level {
   const { direction, level1, level2, level3 } = threshold;
   if (direction === 'above') {
