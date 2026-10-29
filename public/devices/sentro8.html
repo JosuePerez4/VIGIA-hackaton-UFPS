@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sentro 8: vista explosionada (modelo conceptual)</title>
+<style>
+:root {
+  --bg: #f3f5f8;
+  --fg: #1b2230;
+  --muted: #5a6477;
+  --line: #3a4560;
+  --chip: #ffffffd9;
+  --border: #cfd5e0;
+  --accent: #1f5fd6;
+  --accent-fg: #ffffff;
+  --lw: 210px;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151d;
+    --fg: #e7ebf3;
+    --muted: #9aa4b8;
+    --line: #a9b4cc;
+    --chip: #1a2030d9;
+    --border: #2d3548;
+    --accent: #7aa2ff;
+    --accent-fg: #0c1220;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151d;
+  --fg: #e7ebf3;
+  --muted: #9aa4b8;
+  --line: #a9b4cc;
+  --chip: #1a2030d9;
+  --border: #2d3548;
+  --accent: #7aa2ff;
+  --accent-fg: #0c1220;
+}
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.app { height: 100%; display: flex; flex-direction: column; }
+header { padding: 14px 18px 0; }
+h1 { margin: 0; font-size: 1.15rem; font-weight: 650; letter-spacing: -0.01em; }
+header p { margin: 4px 0 0; font-size: 0.82rem; color: var(--muted); max-width: 70ch; line-height: 1.45; }
+#stage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; }
+#stage canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+#stage canvas:active { cursor: grabbing; }
+#wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#wires line { stroke: var(--line); stroke-width: 1; opacity: 0.7; }
+#wires circle { fill: var(--line); }
+.lb {
+  position: absolute;
+  top: 0;
+  width: var(--lw);
+  font-size: 0.9rem;
+  line-height: 1.3;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--chip);
+  border: 1px solid transparent;
+  cursor: default;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.lb.l { left: 12px; text-align: left; }
+.lb.r { right: 12px; text-align: right; }
+.lb.on { border-color: var(--accent); }
+.lb small { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 1px; }
+.hide-labels .lb, .hide-labels #wires { display: none; }
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 18px 14px;
+  border-top: 1px solid var(--border);
+}
+.bar label { font-size: 0.82rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+input[type="range"] { width: min(280px, 46vw); accent-color: var(--accent); }
+button {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+button[aria-pressed="true"] { border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.note { font-size: 0.875rem; color: var(--muted); margin-left: auto; max-width: 52ch; line-height: 1.4; }
+#err { display: none; padding: 24px; color: var(--muted); }
+@media (max-width: 720px) {
+  :root { --lw: 124px; }
+  .lb { font-size: 0.8rem; padding: 4px 6px; }
+  .lb small { display: none; }
+  .note { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Trolex Sentro 8 (TX9165): vista explosionada</h1>
+    <p>Modelo conceptual armado con datos públicos de la hoja de datos y el manual. La disposición interna es aproximada y no corresponde al CAD del fabricante.</p>
+  </header>
+  <div id="stage">
+    <svg id="wires" aria-hidden="true"></svg>
+  </div>
+  <div id="err">Tu navegador no pudo iniciar WebGL, así que no se puede mostrar el modelo 3D.</div>
+  <div class="bar">
+    <label for="ex">Explosión
+      <input id="ex" type="range" min="0" max="1" step="0.001" value="0">
+    </label>
+    <button id="toggle" class="primary" type="button">Ensamblar</button>
+    <button id="spin" type="button" aria-pressed="false">Girar solo</button>
+    <button id="reset" type="button">Restablecer vista</button>
+    <button id="lbl" type="button" aria-pressed="true">Etiquetas</button>
+    <span class="note">Arrastra para rotar, rueda o pellizco para acercar. Pasa el cursor sobre una etiqueta para resaltar la pieza.</span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  var wires = document.getElementById('wires');
+  var renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  } catch (e) {
+    stage.style.display = 'none';
+    document.getElementById('err').style.display = 'block';
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  stage.insertBefore(renderer.domElement, wires);
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  var HOME_POS = new THREE.Vector3(10.5, 6, 15);
+  var HOME_TARGET = new THREE.Vector3(1.1, -0.3, 1.7);
+  camera.position.copy(HOME_POS);
+
+  var controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.copy(HOME_TARGET);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.enablePan = false;
+  controls.minDistance = 7;
+  controls.maxDistance = 34;
+  controls.autoRotateSpeed = 1.4;
+  controls.update();
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a94a8, 0.95));
+  var key = new THREE.DirectionalLight(0xffffff, 0.75);
+  key.position.set(7, 10, 9);
+  scene.add(key);
+  var fill = new THREE.DirectionalLight(0xdfe8ff, 0.35);
+  fill.position.set(-8, -3, 6);
+  scene.add(fill);
+
+  /* ---------- helpers ---------- */
+  function mat(color, o) {
+    o = o || {};
+    var m = new THREE.MeshStandardMaterial({
+      color: color,
+      roughness: o.rough !== undefined ? o.rough : 0.55,
+      metalness: o.metal !== undefined ? o.metal : 0.05
+    });
+    if (o.opacity !== undefined) {
+      m.transparent = true;
+      m.opacity = o.opacity;
+      m.depthWrite = false;
+    }
+    return m;
+  }
+  function withEdges(mesh, strength) {
+    var e = new THREE.LineSegments(
+      new THREE.EdgesGeometry(mesh.geometry),
+      new THREE.LineBasicMaterial({ color: 0x1f2740, transparent: true, opacity: strength === undefined ? 0.32 : strength })
+    );
+    mesh.add(e);
+    return mesh;
+  }
+  function box(w, h, d, color, o) {
+    o = o || {};
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color, o));
+    if (o.edges !== false) withEdges(m, o.edgeStrength);
+    return m;
+  }
+  function cyl(r, h, color, o) {
+    o = o || {};
+    var g = new THREE.CylinderGeometry(r, r, h, o.seg || 28);
+    if (o.axis === 'z') g.rotateX(Math.PI / 2);
+    var m = new THREE.Mesh(g, mat(color, o));
+    if (o.edges) withEdges(m);
+    return m;
+  }
+  function put(group, mesh, x, y, z) {
+    mesh.position.set(x, y, z);
+    group.add(mesh);
+    return mesh;
+  }
+  var parts = {};
+  function part(key, pos, dir) {
+    var g = new THREE.Group();
+    g.position.copy(pos);
+    g.userData = { base: pos.clone(), dir: dir.clone() };
+    scene.add(g);
+    parts[key] = g;
+    return g;
+  }
+  function textTexture(lines, w, h, bg, colors, size) {
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    var x = c.getContext('2d');
+    x.fillStyle = bg;
+    x.fillRect(0, 0, w, h);
+    x.textBaseline = 'middle';
+    x.font = 'bold ' + size + 'px "Courier New", monospace';
+    lines.forEach(function (t, i) {
+      x.fillStyle = colors[i % colors.length];
+      x.fillText(t, 18, (h / (lines.length + 1)) * (i + 1));
+    });
+    var tex = new THREE.CanvasTexture(c);
+    tex.anisotropy = 4;
+    return tex;
+  }
+
+  var V = function (x, y, z) { return new THREE.Vector3(x, y, z); };
+  var NMOD = 8;
+  var MX = function (i) { return -1.9 + i * 0.5429; };
+
+  /* ---------- carcasa base ---------- */
+  var shell = 0xd3d9e3;
+  var base = part('base', V(0, 0, 0), V(0, 0, 0));
+  put(base, box(5, 3.6, 0.15, shell), 0, 0, -0.375);
+  put(base, box(5, 0.15, 0.75, shell), 0, 1.725, 0.075);
+  put(base, box(5, 0.15, 0.75, shell), 0, -1.725, 0.075);
+  put(base, box(0.15, 3.3, 0.75, shell), -2.425, 0, 0.075);
+  put(base, box(0.15, 3.3, 0.75, shell), 2.425, 0, 0.075);
+  [-1, 1].forEach(function (sx) {
+    [-1, 1].forEach(function (sy) {
+      put(base, box(0.6, 0.5, 0.1, shell), sx * 2.8, sy * 1.3, -0.4);
+      put(base, cyl(0.11, 0.02, 0x3a4152, { axis: 'z' }), sx * 2.85, sy * 1.3, -0.34);
+    });
+  });
+
+  /* ---------- prensaestopas ---------- */
+  var glands = part('glands', V(0, 1.725, 0), V(0, 1.5, 0));
+  [-1.4, -0.2, 1.0].forEach(function (x) {
+    put(glands, cyl(0.2, 0.4, 0x3b4252, { edges: true }), x, 0.2, 0);
+    put(glands, cyl(0.27, 0.14, 0x56607a, { seg: 6, edges: true }), x, 0.07, 0);
+    put(glands, cyl(0.12, 0.22, 0x2a303d), x, 0.5, 0);
+  });
+
+  /* ---------- bornero y alimentación ---------- */
+  var term = part('terminal', V(0, 0, -0.15), V(0, 0, 0.95));
+  put(term, box(3.6, 0.5, 0.25, 0x4c5568), 0.2, 1.0, 0);
+  for (var t = 0; t < 8; t++) {
+    put(term, box(0.26, 0.34, 0.12, 0xe08a12), -1.4 + t * 0.46, 1.0, 0.19);
+  }
+  put(term, box(1.6, 1.05, 0.3, 0x9aa3b4), -1.4, -0.35, 0);
+  put(term, box(1.2, 0.22, 0.04, 0x1f2430), -1.4, -0.35, 0.17, 0);
+  put(term, box(1.5, 0.5, 0.25, 0x6a7388), 1.2, -0.7, 0);
+
+  /* ---------- placa de procesamiento ---------- */
+  var pcb = part('pcb', V(0, 0, 0.12), V(0, 0, 2.4));
+  put(pcb, box(4.5, 3.1, 0.08, 0x2f9e5a), 0, 0, 0);
+  [[-2.0, -1.3], [2.0, -1.3], [-2.0, 1.3], [2.0, 1.3]].forEach(function (p) {
+    put(pcb, cyl(0.07, 0.14, 0xb8bfcc, { axis: 'z' }), p[0], p[1], -0.1);
+  });
+  [[-1.2, 0.6, 0.55, 0.5], [0.2, 0.85, 0.95, 0.6], [1.4, 0.15, 0.6, 0.6], [-0.4, -0.3, 0.75, 0.5], [-1.5, -0.4, 0.45, 0.35]].forEach(function (c) {
+    put(pcb, box(c[2], c[3], 0.1, 0x151a25), c[0], c[1], 0.09);
+  });
+  [[-0.2, 1.3], [0.2, 1.3], [0.6, 1.3], [-1.9, 1.2], [-1.9, 0.9], [0.9, -0.45]].forEach(function (c) {
+    put(pcb, cyl(0.1, 0.22, 0xaeb6c6, { axis: 'z' }), c[0], c[1], 0.15);
+  });
+  [[1.55, -0.35], [1.55, -0.95]].forEach(function (c) {
+    put(pcb, box(0.75, 0.45, 0.34, 0x2354c9), c[0], c[1], 0.21);
+  });
+  var comm = put(pcb, box(0.5, 0.62, 0.45, 0xc4cad8), 2.05, 0.7, 0.265);
+  put(pcb, box(0.38, 0.36, 0.1, 0x1d2230), 1.99, 0.7, 0.5);
+  for (var s = 0; s < NMOD; s++) {
+    put(pcb, box(0.36, 0.25, 0.2, 0x0e121c), MX(s), -1.3, 0.14);
+  }
+
+  /* ---------- módulos de sensor ---------- */
+  var modColors = [0xe9a21b, 0x3b82f6, 0x9aa3b4, 0xe5484d, 0x14b88a, 0x8b6cf0];
+  var modules = part('modules', V(0, 0, 0.34), V(0, -1.9, 2.4));
+  for (var i = 0; i < 6; i++) {
+    var mg = new THREE.Group();
+    mg.position.set(MX(i), -1.65, 0);
+    mg.add(box(0.4, 0.8, 0.4, modColors[i]));
+    var head = cyl(0.14, 0.2, 0x1c212c);
+    head.position.set(0, -0.5, 0);
+    mg.add(head);
+    var tag = box(0.3, 0.22, 0.02, 0xf2f4f8, { edges: false });
+    tag.position.set(0, 0.1, 0.21);
+    mg.add(tag);
+    modules.add(mg);
+  }
+  var blanks = part('blanks', V(0, 0, 0.34), V(0, -1.0, 2.4));
+  for (var b = 6; b < NMOD; b++) {
+    put(blanks, box(0.4, 0.3, 0.34, 0x727b8e), MX(b), -1.5, 0);
+    put(blanks, box(0.28, 0.06, 0.2, 0x59627a), MX(b), -1.7, 0);
+  }
+
+  /* ---------- tapa frontal ---------- */
+  var cover = part('cover', V(0, 0, 0.56), V(0, 0, 4.2));
+  put(cover, box(5, 3.6, 0.2, 0xe8ecf3, { opacity: 0.5, edgeStrength: 0.5 }), 0, 0, 0);
+  var dispTex = textTexture(['O2   20.9 %vol', 'CO    0   ppm', 'CO2  0.04 %vol'], 640, 240, '#0a111e', ['#58e08a', '#58e08a', '#58e08a'], 54);
+  var disp = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 0.94), new THREE.MeshBasicMaterial({ map: dispTex }));
+  put(cover, disp, -0.55, 0.75, 0.106);
+  put(cover, box(2.64, 1.08, 0.02, 0x2a3142, { edges: false }), -0.55, 0.75, 0.101);
+  var ledColors = [0x2fd16b, 0xf5a524, 0xf0434b];
+  ledColors.forEach(function (c, i) {
+    var led = cyl(0.09, 0.04, c, { axis: 'z' });
+    led.material = new THREE.MeshBasicMaterial({ color: c });
+    put(cover, led, 1.55, 1.0 - i * 0.3, 0.11);
+  });
+  var plateTex = textTexture(['SENTRO 8'], 512, 112, '#cfd5e0', ['#2a3142'], 58);
+  put(cover, new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.35), new THREE.MeshBasicMaterial({ map: plateTex })), -1.2, -0.25, 0.106);
+  for (var h = 0; h < NMOD; h++) {
+    put(cover, box(0.34, 0.07, 0.03, 0x8b94a8, { edges: false }), MX(h), -1.55, 0.105);
+  }
+
+  /* ---------- batería de respaldo ---------- */
+  var batt = part('battery', V(4.2, -0.5, -0.05), V(1.3, 0, -0.7));
+  put(batt, box(1.5, 2.4, 0.9, 0x465064), 0, 0, 0);
+  put(batt, box(1.38, 0.1, 0.8, 0x6d778c), 0, 1.25, 0);
+  put(batt, cyl(0.09, 0.14, 0xd0383f), -0.35, 1.37, 0);
+  put(batt, cyl(0.09, 0.14, 0x20242e), 0.35, 1.37, 0);
+  put(batt, box(1.1, 0.55, 0.02, 0xe2e6ee, { edges: false }), 0, 0.3, 0.46);
+
+  /* ---------- etiquetas ---------- */
+  var defs = [
+    { k: 'cover',  side: 'r', t: 'Tapa frontal',            s: 'Pantalla LED e indicadores de alarma', part: 'cover',    p: [2.1, 1.55, 0.1] },
+    { k: 'comm',   side: 'r', t: 'Interfaz de comunicación', s: 'Datos hacia el sistema de monitoreo', part: 'pcb',      p: [2.3, 0.7, 0.3], hl: comm },
+    { k: 'pcb',    side: 'r', t: 'Placa de procesamiento',   s: 'Electrónica, relés y alarmas',        part: 'pcb',      p: [-1.8, 1.45, 0.05] },
+    { k: 'terminal', side: 'r', t: 'Bornero y alimentación', s: 'Entrada de energía y señales',        part: 'terminal', p: [1.7, 1.0, 0.2] },
+    { k: 'blanks', side: 'r', t: 'Tapones ciegos',           s: 'Cierran los puertos sin sensor',      part: 'blanks',   p: [MX(6), -1.45, 0.17] },
+    { k: 'battery', side: 'r', t: 'Batería de respaldo',     s: 'Unidad opcional',                     part: 'battery',  p: [0.75, -0.7, 0.45] },
+    { k: 'glands', side: 'l', t: 'Entradas de cable',        s: 'Prensaestopas en la parte superior',  part: 'glands',   p: [-0.2, 0.6, 0] },
+    { k: 'base',   side: 'l', t: 'Carcasa base',             s: 'Con orejas para montaje en pared',    part: 'base',     p: [-2.5, 0.6, 0.1] },
+    { k: 'modules', side: 'l', t: 'Módulos de sensor enchufables', s: 'Hasta ocho, precalibrados',    part: 'modules',  p: [MX(0), -1.55, 0.22] }
+  ];
+  var NS = 'http://www.w3.org/2000/svg';
+  defs.forEach(function (d) {
+    var el = document.createElement('div');
+    el.className = 'lb ' + d.side;
+    el.innerHTML = '<span>' + d.t + '</span><small>' + d.s + '</small>';
+    stage.appendChild(el);
+    d.el = el;
+    d.line = document.createElementNS(NS, 'line');
+    d.dot = document.createElementNS(NS, 'circle');
+    d.dot.setAttribute('r', '3');
+    wires.appendChild(d.line);
+    wires.appendChild(d.dot);
+    d.target = d.hl || parts[d.part];
+    d.sticky = false;
+    function on() { glow(d.target, true); el.classList.add('on'); }
+    function off() { if (!d.sticky) { glow(d.target, false); el.classList.remove('on'); } }
+    el.addEventListener('mouseenter', on);
+    el.addEventListener('mouseleave', off);
+    el.addEventListener('click', function () {
+      d.sticky = !d.sticky;
+      if (d.sticky) on(); else { glow(d.target, false); el.classList.remove('on'); }
+    });
+  });
+  function glow(obj, on) {
+    obj.traverse(function (o) {
+      if (o.isMesh && o.material && o.material.emissive) {
+        o.material.emissive.setHex(on ? 0x2a5fe0 : 0x000000);
+        o.material.emissiveIntensity = on ? 0.55 : 0;
+      }
+    });
+  }
+
+  /* ---------- estado y animación ---------- */
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var curT = reduce ? 1 : 0;
+  var goalT = 1;
+  var dragging = false;
+  var slider = document.getElementById('ex');
+  var toggle = document.getElementById('toggle');
+  slider.value = curT;
+
+  function applyT(t) {
+    var e = t * t * (3 - 2 * t);
+    Object.keys(parts).forEach(function (k) {
+      var g = parts[k];
+      g.position.copy(g.userData.base).addScaledVector(g.userData.dir, e);
+    });
+  }
+  slider.addEventListener('input', function () {
+    dragging = true;
+    curT = goalT = parseFloat(slider.value);
+    toggle.textContent = goalT > 0.5 ? 'Ensamblar' : 'Explotar';
+  });
+  slider.addEventListener('change', function () { dragging = false; });
+  toggle.addEventListener('click', function () {
+    goalT = goalT > 0.5 ? 0 : 1;
+    toggle.textContent = goalT > 0.5 ? 'Ensamblar' : 'Explotar';
+  });
+  var spin = document.getElementById('spin');
+  spin.addEventListener('click', function () {
+    controls.autoRotate = !controls.autoRotate;
+    spin.setAttribute('aria-pressed', String(controls.autoRotate));
+  });
+  document.getElementById('reset').addEventListener('click', function () {
+    camera.position.copy(HOME_POS);
+    controls.target.copy(HOME_TARGET);
+    controls.update();
+  });
+  var lblBtn = document.getElementById('lbl');
+  lblBtn.addEventListener('click', function () {
+    var hidden = document.querySelector('.app').classList.toggle('hide-labels');
+    lblBtn.setAttribute('aria-pressed', String(!hidden));
+  });
+
+  function resize() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.zoom = Math.min(1, (w / h) / 1.25);
+    camera.updateProjectionMatrix();
+  }
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+  window.addEventListener('resize', resize);
+  resize();
+
+  var tmp = new THREE.Vector3();
+  function layout() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    var lw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lw')) || 210;
+    ['l', 'r'].forEach(function (side) {
+      var items = defs.filter(function (d) { return d.side === side; });
+      items.forEach(function (d) {
+        parts[d.part].updateWorldMatrix(true, false);
+        tmp.set(d.p[0], d.p[1], d.p[2]);
+        if (d.hl) { d.hl.updateWorldMatrix(true, false); }
+        parts[d.part].localToWorld(tmp);
+        tmp.project(camera);
+        d.ax = (tmp.x * 0.5 + 0.5) * w;
+        d.ay = (-tmp.y * 0.5 + 0.5) * h;
+        d.hgt = d.el.offsetHeight;
+      });
+      items.sort(function (a, b) { return a.ay - b.ay; });
+      var prev = 6;
+      items.forEach(function (d) {
+        var y = Math.max(d.ay - d.hgt / 2, prev);
+        d.ly = y;
+        prev = y + d.hgt + 6;
+      });
+      var over = prev - 6 - (h - 6);
+      if (over > 0) {
+        items.forEach(function (d) { d.ly = Math.max(6, d.ly - over); });
+      }
+      items.forEach(function (d) {
+        d.el.style.transform = 'translateY(' + d.ly.toFixed(1) + 'px)';
+        var x1 = side === 'l' ? 12 + lw : w - 12 - lw;
+        var y1 = d.ly + d.hgt / 2;
+        d.line.setAttribute('x1', x1.toFixed(1));
+        d.line.setAttribute('y1', y1.toFixed(1));
+        d.line.setAttribute('x2', d.ax.toFixed(1));
+        d.line.setAttribute('y2', d.ay.toFixed(1));
+        d.dot.setAttribute('cx', d.ax.toFixed(1));
+        d.dot.setAttribute('cy', d.ay.toFixed(1));
+      });
+    });
+  }
+
+  function frame() {
+    requestAnimationFrame(frame);
+    if (!dragging && Math.abs(goalT - curT) > 0.0005) {
+      curT += (goalT - curT) * (reduce ? 1 : 0.07);
+      slider.value = curT.toFixed(3);
+    }
+    applyT(curT);
+    controls.update();
+    renderer.render(scene, camera);
+    if (!document.querySelector('.app').classList.contains('hide-labels')) layout();
+  }
+  frame();
+})();
+</script>
+</body>
+</html>

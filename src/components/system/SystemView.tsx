@@ -58,6 +58,19 @@ export function SystemView() {
         ))}
       </div>
 
+      <Panel
+        title="Estación Trolex Sentro 8"
+        description="Vista explosionada del modelo conceptual. Arrastra para rotar; el control de explosión separa las piezas. Disposición interna aproximada, no es el CAD del fabricante."
+      >
+        <iframe
+          src="/devices/sentro8.html"
+          title="Vista explosionada de la estación Trolex Sentro 8"
+          loading="lazy"
+          sandbox="allow-scripts"
+          className="h-[34rem] w-full rounded-sm border border-line bg-canvas"
+        />
+      </Panel>
+
       <Panel title="Dispositivo de procesamiento" description="Estación de entrada de la mina. Envía datos a la plataforma y devuelve las señales de alerta.">
         <dl className="grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
           <div>
