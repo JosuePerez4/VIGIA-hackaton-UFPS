@@ -27,6 +27,8 @@ export function PanelView() {
   const activeAlerts = alerts.filter((a) => a.status === 'activa').length;
 
   const recent = [...timeline].reverse().slice(0, 8);
+  const maxRh = stations.reduce((best, s) => (s.climate.rh > best.climate.rh ? s : best), stations[0]);
+  const maxWetBulb = stations.reduce((best, s) => (s.climate.wetBulbC > best.climate.wetBulbC ? s : best), stations[0]);
 
   return (
     <div className="space-y-6">
@@ -51,6 +53,26 @@ export function PanelView() {
               onSelect={() => selectGas(gas)}
             />
           ))}
+        </div>
+      </Panel>
+
+      <Panel
+        title="Clima de la mina"
+        description="Solo las estaciones Trolex Sentro 8 tienen módulo de humedad. La temperatura húmeda no la mide el dispositivo: se calcula a partir de temperatura y humedad relativa."
+      >
+        <div className="grid gap-3 md:grid-cols-2">
+          <Metric
+            label="Humedad relativa (máxima)"
+            value={maxRh.climate.rh.toFixed(0)}
+            unit="%"
+            footnote={`${maxRh.id} · medida por el módulo de humedad`}
+          />
+          <Metric
+            label="Temperatura húmeda (máxima, calculada)"
+            value={maxWetBulb.climate.wetBulbC.toFixed(1)}
+            unit="°C"
+            footnote={`${maxWetBulb.id} · calculada con T y HR`}
+          />
         </div>
       </Panel>
 
