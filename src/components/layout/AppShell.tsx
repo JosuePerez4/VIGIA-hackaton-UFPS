@@ -78,7 +78,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <p className="mt-auto hidden px-5 py-4 text-xs text-ink-muted md:block">Datos simulados · prototipo</p>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">

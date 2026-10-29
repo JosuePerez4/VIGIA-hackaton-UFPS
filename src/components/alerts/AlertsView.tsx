@@ -3,8 +3,12 @@
 import { useState } from 'react';
 import { LevelPill, Metric, Panel, buttonActive, buttonIdle } from '@/components/ui/primitives';
 import type { Level } from '@/config/thresholds';
+import { downloadAlertsCsv, downloadIncidentReport, downloadTurnReport } from '@/lib/reports';
 import { NODE_BY_ID } from '@/sim/mine';
 import { useVigia } from '@/store/vigia-store';
+
+/** Snapshot completo del store en el momento del clic (no se suscribe a cada tick). */
+const current = () => useVigia.getState();
 
 type LevelFilter = 'todos' | '1' | '2' | '3';
 type StatusFilter = 'todos' | 'activa' | 'escalada' | 'resuelta';
@@ -62,6 +66,12 @@ export function AlertsView() {
                 ['resuelta', 'Resueltas'],
               ]}
             />
+            <button type="button" onClick={() => downloadTurnReport(current(), current().thresholds)} className={buttonIdle}>
+              Reporte del turno
+            </button>
+            <button type="button" onClick={() => downloadAlertsCsv(current(), current().thresholds)} className={buttonIdle}>
+              CSV de alertas
+            </button>
             <button type="button" onClick={acknowledgeAll} disabled={pendingCount === 0} className={buttonIdle}>
               Reconocer todas
             </button>
@@ -105,13 +115,22 @@ export function AlertsView() {
                       <td className="py-3 pr-4 text-ink-muted">{alert.channel === 'rápido' ? 'Rápido' : 'Lento (oficial)'}</td>
                       <td className="py-3 pr-4 capitalize text-ink-muted">{alert.status}</td>
                       <td className="py-3 text-right">
-                        {canAck ? (
-                          <button type="button" onClick={() => acknowledge(alert.id)} className={buttonActive}>
-                            Reconocer
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => downloadIncidentReport(current(), alert, current().thresholds)}
+                            className={buttonIdle}
+                          >
+                            Reporte
                           </button>
-                        ) : (
-                          <span className="text-ink-muted">{alert.acknowledged ? 'Reconocida' : '—'}</span>
-                        )}
+                          {canAck ? (
+                            <button type="button" onClick={() => acknowledge(alert.id)} className={buttonActive}>
+                              Reconocer
+                            </button>
+                          ) : (
+                            <span className="self-center text-ink-muted">{alert.acknowledged ? 'Reconocida' : '—'}</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { LevelPill, buttonIdle } from '@/components/ui/primitives';
+import { downloadIncidentReport } from '@/lib/reports';
 import { NODE_BY_ID } from '@/sim/mine';
 import type { AlertRecord } from '@/sim/types';
 import { useVigia } from '@/store/vigia-store';
@@ -105,6 +106,18 @@ export function AlertNotifier() {
                   <p className="tabular-nums text-sm text-ink">
                     {alert.value.toFixed(threshold.decimals)} {threshold.unit} · {alert.time}
                   </p>
+                  {alert.level >= 2 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const s = useVigia.getState();
+                        downloadIncidentReport(s, alert, s.thresholds);
+                      }}
+                      className={`${buttonIdle} mt-1 self-start py-1 text-xs`}
+                    >
+                      Descargar reporte
+                    </button>
+                  ) : null}
                 </div>
                 <button
                   type="button"
