@@ -6,6 +6,7 @@ import { buttonActive, buttonIdle } from '@/components/ui/primitives';
 const DEVICES = [
   { id: 'sentro8', label: 'Trolex Sentro 8', src: '/devices/sentro8.html', title: 'Vista explosionada de la estación Trolex Sentro 8' },
   { id: 'mx6', label: 'MX6 iBrid', src: '/devices/mx6.html', title: 'Vista del dispositivo MX6 iBrid, explosionado y puesto en el cuerpo' },
+  { id: 'tx6373', label: 'TX6373 + sonda', src: '/devices/tx6373.html', title: 'Vista del transmisor TX6373 con sonda remota en varilla (concepto)' },
 ] as const;
 
 export function DevicesView() {
