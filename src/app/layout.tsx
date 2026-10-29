@@ -3,6 +3,7 @@ import { Barlow, Barlow_Condensed } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { KeyboardShortcuts } from '@/components/sim/KeyboardShortcuts';
+import { PersistenceDriver } from '@/components/sim/PersistenceDriver';
 import { SimulationDriver } from '@/components/sim/SimulationDriver';
 import './globals.css';
 
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body className="min-h-full bg-canvas font-sans text-ink">
         <SimulationDriver />
         <KeyboardShortcuts />
+        <PersistenceDriver />
         <AppShell>{children}</AppShell>
       </body>
     </html>
