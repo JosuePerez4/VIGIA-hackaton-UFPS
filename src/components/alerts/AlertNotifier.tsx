@@ -115,7 +115,7 @@ export function AlertNotifier() {
                       }}
                       className={`${buttonIdle} mt-1 self-start py-1 text-xs`}
                     >
-                      Descargar reporte
+                      Descargar PDF
                     </button>
                   ) : null}
                 </div>

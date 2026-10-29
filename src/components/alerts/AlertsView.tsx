@@ -67,7 +67,7 @@ export function AlertsView() {
               ]}
             />
             <button type="button" onClick={() => downloadTurnReport(current(), current().thresholds)} className={buttonIdle}>
-              Reporte del turno
+              Reporte del turno (PDF)
             </button>
             <button type="button" onClick={() => downloadAlertsCsv(current(), current().thresholds)} className={buttonIdle}>
               CSV de alertas
@@ -121,7 +121,7 @@ export function AlertsView() {
                             onClick={() => downloadIncidentReport(current(), alert, current().thresholds)}
                             className={buttonIdle}
                           >
-                            Reporte
+                            Reporte PDF
                           </button>
                           {canAck ? (
                             <button type="button" onClick={() => acknowledge(alert.id)} className={buttonActive}>
