@@ -6,7 +6,15 @@ import type { MineSnapshot } from '@/sim/types';
 
 type Thresholds = Record<GasKey, GasThreshold>;
 
+export interface MapLayers {
+  /** Cables de fibra que van de cada estación hasta el receptor y la base. */
+  cables: boolean;
+  /** Enlaces inalámbricos de cada MX6 con su estación. */
+  wireless: boolean;
+}
+
 interface UiState {
+  layers: MapLayers;
   speed: 1 | 2 | 5;
   paused: boolean;
   /** Estación elegida en el selector antes de lanzar un escenario. */
@@ -34,6 +42,7 @@ export interface VigiaStore extends MineSnapshot, UiState {
   selectWorker: (id: string | null) => void;
   selectGas: (gas: GasKey) => void;
   setHeatGas: (gas: GasKey | null) => void;
+  toggleLayer: (layer: keyof MapLayers) => void;
   updateThreshold: (gas: GasKey, patch: Partial<Pick<GasThreshold, 'level1' | 'level2' | 'level3' | 'fastRate'>>) => void;
   restoreThresholds: () => void;
 }
@@ -42,6 +51,7 @@ const initialThresholds = structuredClone(DEFAULT_THRESHOLDS);
 
 export const useVigia = create<VigiaStore>()((set, get) => ({
   ...engine.snapshot(),
+  layers: { cables: true, wireless: false },
   speed: 1,
   paused: false,
   pendingTarget: 'EST-08',
@@ -97,6 +107,8 @@ export const useVigia = create<VigiaStore>()((set, get) => ({
   selectGas: (gas) => set({ selectedGas: gas }),
 
   setHeatGas: (gas) => set({ heatGas: gas }),
+
+  toggleLayer: (layer) => set((state) => ({ layers: { ...state.layers, [layer]: !state.layers[layer] } })),
 
   updateThreshold: (gas, patch) => {
     const thresholds = { ...get().thresholds, [gas]: { ...get().thresholds[gas], ...patch } };

@@ -23,6 +23,8 @@ export function MapView() {
   const selectedWorkerId = useVigia((s) => s.selectedWorkerId);
   const heatGas = useVigia((s) => s.heatGas);
   const setHeatGas = useVigia((s) => s.setHeatGas);
+  const layers = useVigia((s) => s.layers);
+  const toggleLayer = useVigia((s) => s.toggleLayer);
   const selectStation = useVigia((s) => s.selectStation);
   const selectWorker = useVigia((s) => s.selectWorker);
 
@@ -33,6 +35,15 @@ export function MapView() {
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="space-y-4">
         <MineMap />
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Capas del mapa">
+          <span className="mr-2 text-sm text-ink-muted">Capas:</span>
+          <button type="button" onClick={() => toggleLayer('cables')} aria-pressed={layers.cables} className={layers.cables ? buttonActive : buttonIdle}>
+            Cables de fibra
+          </button>
+          <button type="button" onClick={() => toggleLayer('wireless')} aria-pressed={layers.wireless} className={layers.wireless ? buttonActive : buttonIdle}>
+            Señal inalámbrica
+          </button>
+        </div>
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Capa de mapa de calor">
           <span className="mr-2 text-sm text-ink-muted">Mapa de calor:</span>
           <button type="button" onClick={() => setHeatGas(null)} aria-pressed={heatGas === null} className={heatGas === null ? buttonActive : buttonIdle}>

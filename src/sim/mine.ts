@@ -3,7 +3,7 @@
  * Coordenadas en unidades del SVG: la cuadrícula del plano avanza 60 px en X y 70 px en Y.
  */
 
-export type Area = 'Galería' | 'Refugio' | 'Bombeo' | 'Frente sur' | 'Sector este';
+export type Area = 'Galería' | 'Refugio' | 'Bombeo' | 'Frente sur' | 'Sector este' | 'Entrada' | 'Superficie';
 
 export interface MineNode {
   id: string;
@@ -14,6 +14,8 @@ export interface MineNode {
 }
 
 export const ENTRY_ID = 'ENT-00';
+/** Base en superficie, fuera de la mina: donde está el ingeniero de turno. */
+export const BASE_ID = 'BASE-01';
 
 const NODE_DEFS: [id: string, x: number, y: number, area: Area][] = [
   ['EST-01', 190, 100, 'Galería'],
@@ -65,10 +67,12 @@ const EDGE_DEFS: [string, string][] = [
   ['EST-06', 'EST-21'],
 ];
 
-const entry: MineNode = { id: ENTRY_ID, name: 'Entrada · Dispositivo de procesamiento', area: 'Galería', x: 190, y: 40 };
+const entry: MineNode = { id: ENTRY_ID, name: 'Entrada · Receptor y procesador de información', area: 'Entrada', x: 190, y: 40 };
+const base: MineNode = { id: BASE_ID, name: 'Superficie · Base del ingeniero de turno', area: 'Superficie', x: 190, y: -30 };
 
 export const NODES: MineNode[] = [
   entry,
+  base,
   ...NODE_DEFS.map(([id, x, y, area]) => ({
     id,
     name: `Estación ${id.slice(4)} · ${area}`,
@@ -89,13 +93,19 @@ export const ZONES = [
   { name: 'Sector este', x: 264, y: 404, w: 92, h: 54, color: '#2c3b4d' },
 ] as const;
 
+/** Cable de superficie: une la base del ingeniero con el receptor de la entrada. */
+const SURFACE_EDGE: [string, string] = [BASE_ID, ENTRY_ID];
+
+/** Galerías (trazo oscuro de la mina). */
+export const EDGES: [string, string][] = EDGE_DEFS;
+/** Cables de fibra: siguen las galerías hasta la entrada y continúan hasta la base en superficie. */
+export const CABLES: [string, string][] = [...EDGE_DEFS, SURFACE_EDGE];
+
 export const ADJACENCY: Record<string, string[]> = Object.fromEntries(NODES.map((n) => [n.id, [] as string[]]));
-for (const [a, b] of EDGE_DEFS) {
+for (const [a, b] of CABLES) {
   ADJACENCY[a].push(b);
   ADJACENCY[b].push(a);
 }
-
-export const EDGES: [string, string][] = EDGE_DEFS;
 
 export function hopDistances(from: string): Record<string, number> {
   const dist: Record<string, number> = { [from]: 0 };
