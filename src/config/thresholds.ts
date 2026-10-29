@@ -23,7 +23,7 @@ export type Level = 0 | 1 | 2 | 3;
  */
 // TODO: reemplazar con los valores del Decreto 1886 de 2015 / Decreto 944 de 2022
 export const DEFAULT_THRESHOLDS: Record<GasKey, GasThreshold> = {
-  CH4: { label: 'Metano (CH₄)', unit: '% vol', decimals: 2, direction: 'above', level1: 1.0, level2: 1.5, level3: 2.0, fastRate: 0.02 },
+  CH4: { label: 'Metano (CH₄)', unit: '% vol', decimals: 2, direction: 'above', level1: 1.0, level2: 1.5, level3: 2.0, fastRate: 0.006 },
   CO: { label: 'Monóxido de carbono (CO)', unit: 'ppm', decimals: 0, direction: 'above', level1: 25, level2: 50, level3: 100, fastRate: 3 },
   O2: { label: 'Oxígeno (O₂)', unit: '% vol', decimals: 1, direction: 'below', level1: 19.5, level2: 18, level3: 16, fastRate: 0.1 },
   H2S: { label: 'Sulfuro de hidrógeno (H₂S)', unit: 'ppm', decimals: 1, direction: 'above', level1: 5, level2: 10, level3: 15, fastRate: 0.6 },

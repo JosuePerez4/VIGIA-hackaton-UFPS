@@ -6,15 +6,6 @@ import type { MineSnapshot } from '@/sim/types';
 const SAMPLE_EVERY_S = 30;
 /** Envío al servidor, en tiempo real. */
 const FLUSH_MS = 5000;
-/** Desfase de la hora simulada: el turno empieza a las 06:00:00. */
-const START_SECONDS = 6 * 3600;
-
-/** Convierte "06:12:03" (hora simulada) a segundos desde el inicio del turno. */
-export function clockToElapsed(clock: string): number {
-  const [h, m, s] = clock.split(':').map(Number);
-  return h * 3600 + m * 60 + s - START_SECONDS;
-}
-
 interface Pending {
   alerts: AlertRow[];
   timeline: TimelineRow[];
@@ -73,7 +64,7 @@ export class SessionRecorder {
       session.sentAlerts.set(alert.id, signature);
       session.pending.alerts.push({
         alertNo: alert.id,
-        simElapsedS: clockToElapsed(alert.time),
+        simElapsedS: alert.elapsed,
         simClock: alert.time,
         stationId: alert.stationId,
         gas: alert.gas,
@@ -90,7 +81,7 @@ export class SessionRecorder {
       session.lastEventNo = entry.id;
       session.pending.timeline.push({
         eventNo: entry.id,
-        simElapsedS: clockToElapsed(entry.time),
+        simElapsedS: entry.elapsed,
         simClock: entry.time,
         tone: entry.tone,
         text: entry.text,

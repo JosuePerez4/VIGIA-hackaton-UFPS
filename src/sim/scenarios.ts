@@ -1,5 +1,8 @@
 import type { GasKey } from '@/config/thresholds';
 
+/** Cada segundo simulado equivale a TIME_SCALE segundos de escenario: los eventos duran minutos, no segundos. */
+export const TIME_SCALE = 3;
+
 export type ScenarioId =
   | 'normal'
   | 'fuga-metano'
@@ -136,7 +139,8 @@ const ramp = (t: number, start: number, span: number, amount: number) =>
 
 /** Aporte adicional de un escenario a un gas en una estación (se suma a la línea base). */
 export function gasEffect(ctx: EffectContext, gas: GasKey): number {
-  const { scenario, elapsed: t, hopsFromTarget: h, hopsFromEntry: e } = ctx;
+  const { scenario, hopsFromTarget: h, hopsFromEntry: e } = ctx;
+  const t = ctx.elapsed / TIME_SCALE;
 
   if (scenario === 'fuga-metano') {
     const intensity = [1, 0.5, 0.25][h] ?? 0;
@@ -160,7 +164,7 @@ export function gasEffect(ctx: EffectContext, gas: GasKey): number {
 
   if (scenario === 'aumento-co') {
     const intensity = [1, 0.35, 0.1][h] ?? 0;
-    if (gas === 'CO') return intensity * ramp(t, 3 + h * 10, 20, 180);
+    if (gas === 'CO') return intensity * ramp(t, 3 + h * 10, 20, 240);
   }
 
   if (scenario === 'falla-ventilacion') {

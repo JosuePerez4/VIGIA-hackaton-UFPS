@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { DEFAULT_THRESHOLDS, type GasKey, type GasThreshold } from '@/config/thresholds';
+import { currentDaySeconds } from '@/lib/time';
 import { engine } from '@/sim/engine';
 import type { ScenarioId } from '@/sim/scenarios';
 import type { MineSnapshot } from '@/sim/types';
@@ -15,7 +16,7 @@ export interface MapLayers {
 
 interface UiState {
   layers: MapLayers;
-  speed: 1 | 2 | 5;
+  speed: 1 | 2 | 5 | 10;
   paused: boolean;
   /** Estación elegida en el selector antes de lanzar un escenario. */
   pendingTarget: string;
@@ -30,7 +31,7 @@ interface UiState {
 
 export interface VigiaStore extends MineSnapshot, UiState {
   step: (seconds: number) => void;
-  setSpeed: (speed: 1 | 2 | 5) => void;
+  setSpeed: (speed: 1 | 2 | 5 | 10) => void;
   togglePause: () => void;
   launch: (scenario: ScenarioId, target?: string) => void;
   reset: () => void;
@@ -73,13 +74,13 @@ export const useVigia = create<VigiaStore>()((set, get) => ({
 
   launch: (scenario, target) => {
     const chosen = target ?? get().pendingTarget;
-    engine.reset(scenario, chosen);
+    engine.reset(scenario, chosen, currentDaySeconds());
     set({ ...engine.snapshot(), paused: false, dismissedEmergencyId: null });
   },
 
   reset: () => {
     const { scenario, target } = get();
-    engine.reset(scenario, target);
+    engine.reset(scenario, target, currentDaySeconds());
     set({ ...engine.snapshot(), paused: false, dismissedEmergencyId: null });
   },
 

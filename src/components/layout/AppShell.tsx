@@ -93,7 +93,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-2">
               <span className="text-ink-muted">Escenario</span>
               <span className="font-medium text-ink">{scenarioName}</span>
-              <span className="tabular-nums text-ink-muted">T+{clock}</span>
+              <span className="tabular-nums text-ink-muted">{clock}</span>
               {paused ? <span className="text-ink-muted">· pausado</span> : null}
             </div>
             <time className="tabular-nums text-ink-muted" suppressHydrationWarning>

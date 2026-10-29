@@ -237,6 +237,89 @@ export class PdfReport {
     this.y -= 12;
   }
 
+  /** Gráfica de línea con umbrales de nivel y una marca vertical opcional (por ejemplo, la alerta). */
+  chart(spec: {
+    points: { t: number; v: number }[];
+    thresholds: { value: number; color: RGB; label: string }[];
+    marker?: { t: number; label: string };
+    unit: string;
+    decimals: number;
+    timeLabel: (t: number) => string;
+    color?: RGB;
+  }) {
+    const height = 180;
+    this.ensure(height + 60);
+    const left = MARGIN + 54;
+    const right = PAGE_W - MARGIN - 14;
+    const top = this.y - 14;
+    const bottom = top - height;
+
+    const values = [...spec.points.map((p) => p.v), ...spec.thresholds.map((t) => t.value)];
+    let min = Math.min(...values);
+    let max = Math.max(...values);
+    if (max - min < 1e-9) max = min + 1;
+    const pad = (max - min) * 0.1;
+    min -= pad;
+    max += pad;
+
+    const tMin = spec.points[0].t;
+    const tMax = spec.points[spec.points.length - 1].t;
+    const span = tMax - tMin || 1;
+    const x = (t: number) => left + ((t - tMin) / span) * (right - left);
+    const y = (v: number) => bottom + ((v - min) / (max - min)) * (top - bottom);
+
+    this.page.drawRectangle({ x: left, y: bottom, width: right - left, height: top - bottom, color: COLORS.zebra });
+    this.page.drawText(pdfText(spec.unit), { x: MARGIN, y: top + 4, size: 7.5, font: this.font, color: COLORS.muted });
+
+    for (let i = 0; i <= 4; i++) {
+      const v = min + ((max - min) * i) / 4;
+      this.page.drawLine({ start: { x: left, y: y(v) }, end: { x: right, y: y(v) }, thickness: 0.4, color: COLORS.line });
+      const label = v.toFixed(spec.decimals);
+      const w = this.font.widthOfTextAtSize(label, 7.5);
+      this.page.drawText(label, { x: left - w - 6, y: y(v) - 2.5, size: 7.5, font: this.font, color: COLORS.muted });
+    }
+    for (let i = 0; i <= 4; i++) {
+      const t = tMin + (span * i) / 4;
+      const label = pdfText(spec.timeLabel(t));
+      const w = this.font.widthOfTextAtSize(label, 7.5);
+      this.page.drawText(label, { x: Math.min(Math.max(x(t) - w / 2, left), right - w), y: bottom - 12, size: 7.5, font: this.font, color: COLORS.muted });
+    }
+
+    for (const th of spec.thresholds) {
+      this.page.drawLine({
+        start: { x: left, y: y(th.value) },
+        end: { x: right, y: y(th.value) },
+        thickness: 0.9,
+        color: th.color,
+        dashArray: [4, 3],
+      });
+      const label = pdfText(th.label);
+      const w = this.font.widthOfTextAtSize(label, 7);
+      this.page.drawText(label, { x: right - w - 3, y: y(th.value) + 2, size: 7, font: this.bold, color: th.color });
+    }
+
+    for (let i = 1; i < spec.points.length; i++) {
+      const a = spec.points[i - 1];
+      const b = spec.points[i];
+      this.page.drawLine({
+        start: { x: x(a.t), y: y(a.v) },
+        end: { x: x(b.t), y: y(b.v) },
+        thickness: 1.8,
+        color: spec.color ?? COLORS.accent,
+      });
+    }
+
+    if (spec.marker) {
+      const mx = x(spec.marker.t);
+      this.page.drawLine({ start: { x: mx, y: bottom }, end: { x: mx, y: top }, thickness: 0.9, color: COLORS.ink, dashArray: [2, 2] });
+      const label = pdfText(spec.marker.label);
+      const w = this.font.widthOfTextAtSize(label, 7.5);
+      this.page.drawText(label, { x: Math.min(mx + 4, right - w), y: top - 10, size: 7.5, font: this.bold, color: COLORS.ink });
+    }
+
+    this.y = bottom - 30;
+  }
+
   /** Texto de vacío cuando una sección no tiene datos. */
   empty(text: string) {
     this.paragraph(text, 9.5, COLORS.muted);

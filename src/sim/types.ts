@@ -60,6 +60,8 @@ export interface WorkerSnapshot {
 export interface AlertRecord {
   id: number;
   time: string;
+  /** Segundos desde el inicio del turno. */
+  elapsed: number;
   stationId: string;
   gas: GasKey;
   level: Level;
@@ -72,6 +74,7 @@ export interface AlertRecord {
 export interface TimelineEntry {
   id: number;
   time: string;
+  elapsed: number;
   text: string;
   tone: Level;
 }
@@ -91,6 +94,8 @@ export interface Representative {
 export interface MineSnapshot {
   elapsed: number;
   clock: string;
+  /** Segundos desde medianoche en que empezó el turno (hora de Colombia). */
+  startSeconds: number;
   scenario: ScenarioId;
   target: string;
   stations: StationSnapshot[];

@@ -85,7 +85,7 @@ export function SimulationView() {
                 Reiniciar mina
               </button>
               <div role="group" aria-label="Velocidad de simulación" className="flex items-center gap-1">
-                {([1, 2, 5] as const).map((value) => (
+                {([1, 2, 5, 10] as const).map((value) => (
                   <button
                     key={value}
                     type="button"

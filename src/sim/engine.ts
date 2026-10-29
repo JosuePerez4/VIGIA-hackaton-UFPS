@@ -1,6 +1,6 @@
 import { DEFAULT_THRESHOLDS, GAS_ORDER, levelFor, type GasKey, type GasThreshold, type Level } from '@/config/thresholds';
 import { ADJACENCY, ENTRY_ID, LAST_CALIBRATION, NODE_BY_ID, STATION_IDS, WORKER_SEEDS, hopDistances } from './mine';
-import { SCENARIO_BY_ID, gasEffect, type ScenarioId } from './scenarios';
+import { SCENARIO_BY_ID, TIME_SCALE, gasEffect, type ScenarioId } from './scenarios';
 import { wetBulbFromTempRh } from './climate';
 import type {
   AlertRecord,
@@ -41,7 +41,7 @@ const stationBase = (gas: GasKey, factor: number) => BASELINE[gas] * (1 + (facto
 
 /** Ruido de medición por gas. */
 const NOISE: Record<GasKey, number> = {
-  CH4: 0.01,
+  CH4: 0.003,
   CO: 0.5,
   O2: 0.04,
   H2S: 0.08,
@@ -58,7 +58,16 @@ const FAST_LAG = 2;
 const SERIES_LENGTH = 300;
 const TIMELINE_LENGTH = 200;
 const ALERT_LENGTH = 300;
-const START_SECONDS = 6 * 3600; // turno inicia a las 06:00
+/** Turno de referencia si no se indica otra hora: 14:20. */
+const DEFAULT_START_SECONDS = 14 * 3600 + 20 * 60;
+/** Historia por estación para los reportes: un punto cada 5 s, hasta unas 3 horas. */
+const TRACE_EVERY_S = 5;
+const TRACE_LENGTH = 2400;
+
+export interface TracePoint {
+  t: number;
+  v: number;
+}
 /** Segundos que tarda un minero en recorrer un tramo de galería. */
 const WALK_SECONDS = 10;
 /** Los MX6 de los mineros se mantienen entre 90 % y 100 %. */
@@ -85,8 +94,8 @@ const gasRecord = <T,>(fn: (gas: GasKey) => T): Record<GasKey, T> =>
 
 const mean = (values: number[]) => values.reduce((sum, v) => sum + v, 0) / values.length;
 
-export function clockFromElapsed(elapsed: number): string {
-  const total = START_SECONDS + Math.floor(elapsed);
+export function clockFromElapsed(elapsed: number, startSeconds = DEFAULT_START_SECONDS): string {
+  const total = startSeconds + Math.floor(elapsed);
   const h = Math.floor(total / 3600) % 24;
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
@@ -133,6 +142,8 @@ export class SimEngine {
   private seed: number;
   private rng!: Rng;
   private elapsed = 0;
+  private startSeconds = DEFAULT_START_SECONDS;
+  private traces: Record<string, Record<GasKey, TracePoint[]>> = {};
   private scenario: ScenarioId = 'normal';
   private target = 'EST-08';
   private thresholds: Record<GasKey, GasThreshold> = DEFAULT_THRESHOLDS;
@@ -158,9 +169,11 @@ export class SimEngine {
   }
 
   /** Reinicia la mina con un escenario. */
-  reset(scenario: ScenarioId, target: string) {
+  reset(scenario: ScenarioId, target: string, startSeconds = this.startSeconds) {
     this.rng = new Rng(this.seed);
     this.elapsed = 0;
+    this.startSeconds = startSeconds;
+    this.traces = {};
     this.scenario = scenario;
     this.target = target;
     this.hopsTarget = hopDistances(target);
@@ -295,7 +308,9 @@ export class SimEngine {
 
     return {
       elapsed: this.elapsed,
-      clock: clockFromElapsed(this.elapsed),
+      clock: clockFromElapsed(this.elapsed, this.startSeconds),
+
+      startSeconds: this.startSeconds,
       scenario: this.scenario,
       target: this.target,
       stations,
@@ -324,6 +339,7 @@ export class SimEngine {
     this.updateAlerts();
     for (const w of this.workers) this.walk(w);
     this.updateSeries();
+    this.recordTrace();
     this.updateSystem();
   }
 
@@ -418,7 +434,9 @@ export class SimEngine {
 
         const alert: AlertRecord = {
           id: ++this.alertId,
-          time: clockFromElapsed(this.elapsed),
+          time: clockFromElapsed(this.elapsed, this.startSeconds),
+
+          elapsed: this.elapsed,
           stationId: st.id,
           gas,
           level,
@@ -471,6 +489,24 @@ export class SimEngine {
     return pool[Math.floor(this.rng.next() * pool.length)] ?? node;
   }
 
+  /** Guarda la historia de cada estación para los reportes. */
+  private recordTrace() {
+    if (this.elapsed % TRACE_EVERY_S !== 0) return;
+    for (const st of this.stations) {
+      const perGas = (this.traces[st.id] ??= gasRecord(() => []));
+      for (const gas of GAS_ORDER) {
+        const list = perGas[gas];
+        list.push({ t: this.elapsed, v: st.avg[gas] });
+        if (list.length > TRACE_LENGTH) list.shift();
+      }
+    }
+  }
+
+  /** Historia de una estación y gas entre dos instantes (segundos desde el inicio del turno). */
+  stationTrace(stationId: string, gas: GasKey, from: number, to: number): TracePoint[] {
+    return (this.traces[stationId]?.[gas] ?? []).filter((p) => p.t >= from && p.t <= to);
+  }
+
   private updateSeries() {
     for (const gas of GAS_ORDER) {
       const rep = this.representative[gas];
@@ -490,14 +526,14 @@ export class SimEngine {
   private fireScenarioSteps() {
     const definition = SCENARIO_BY_ID[this.scenario];
     definition.steps.forEach((step, index) => {
-      if (this.firedSteps.has(index) || this.elapsed < step.at) return;
+      if (this.firedSteps.has(index) || this.elapsed < step.at * TIME_SCALE) return;
       this.firedSteps.add(index);
       this.pushTimeline(step.text(this.target), step.tone);
     });
   }
 
   private pushTimeline(text: string, tone: Level) {
-    this.timeline.push({ id: ++this.timelineId, time: clockFromElapsed(this.elapsed), text, tone });
+    this.timeline.push({ id: ++this.timelineId, elapsed: this.elapsed, time: clockFromElapsed(this.elapsed, this.startSeconds), text, tone });
     if (this.timeline.length > TIMELINE_LENGTH) this.timeline.shift();
   }
 }

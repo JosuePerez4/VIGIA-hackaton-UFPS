@@ -13,26 +13,33 @@ const MAX_TOASTS = 3;
 
 interface Toast {
   key: number;
+  /** Un caso = una estación y un gas. Varias alertas del mismo caso se muestran en un solo aviso. */
+  episode: string;
   alert: AlertRecord;
 }
 
+const episodeOf = (alert: AlertRecord) => `${alert.stationId}|${alert.gas}`;
+
 /**
- * Avisa de cada alerta nueva: reproduce el sonido y muestra un aviso en pantalla.
- * Se suscribe al store fuera del render, así no provoca renders en cascada.
+ * Avisa de cada caso nuevo: reproduce el sonido y muestra un aviso en pantalla.
+ * Si el mismo caso escala de nivel, el aviso se actualiza en lugar de repetirse.
  */
 export function AlertNotifier() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [muted, setMuted] = useState(false);
   const thresholds = useVigia((s) => s.thresholds);
   const mutedRef = useRef(false);
+  const toastsRef = useRef<Toast[]>([]);
+  const timersRef = useRef(new Map<number, number>());
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const audio = new Audio(SOUND_SRC);
     audio.preload = 'auto';
     audioRef.current = audio;
+    const timers = timersRef.current;
 
-    // Los navegadores bloquean el audio hasta el primer gesto del usuario. Se desbloquea en el primer clic o tecla.
+    // Los navegadores bloquean el audio hasta el primer gesto del usuario.
     const unlock = () => {
       audio
         .play()
@@ -47,6 +54,23 @@ export function AlertNotifier() {
     window.addEventListener('pointerdown', unlock);
     window.addEventListener('keydown', unlock);
 
+    const commit = (list: Toast[]) => {
+      toastsRef.current = list;
+      setToasts(list);
+    };
+
+    const schedule = (key: number) => {
+      const previous = timers.get(key);
+      if (previous !== undefined) window.clearTimeout(previous);
+      timers.set(
+        key,
+        window.setTimeout(() => {
+          timers.delete(key);
+          commit(toastsRef.current.filter((t) => t.key !== key));
+        }, TOAST_MS),
+      );
+    };
+
     let lastSeen = useVigia.getState().alerts.reduce((max, a) => Math.max(max, a.id), 0);
     let nextKey = 0;
 
@@ -56,21 +80,45 @@ export function AlertNotifier() {
       lastSeen = state.alerts.reduce((max, a) => Math.max(max, a.id), lastSeen);
       if (fresh.length === 0) return;
 
-      if (!mutedRef.current) {
-        audio.currentTime = 0;
-        audio.play().catch(() => undefined);
+      // Por caso, solo cuenta la alerta más reciente.
+      const newest = new Map<string, AlertRecord>();
+      for (const alert of fresh) newest.set(episodeOf(alert), alert);
+
+      let sound = false;
+      let list = [...toastsRef.current];
+      for (const [episode, alert] of newest) {
+        const index = list.findIndex((t) => t.episode === episode);
+        if (index >= 0) {
+          const existing = list[index];
+          if (alert.level > existing.alert.level) sound = true;
+          list[index] = { ...existing, alert };
+          schedule(existing.key);
+        } else {
+          sound = true;
+          const key = ++nextKey;
+          list = [{ key, episode, alert }, ...list];
+          schedule(key);
+        }
       }
 
-      const added = fresh.slice(-MAX_TOASTS).map((alert) => ({ key: ++nextKey, alert }));
-      setToasts((current) => [...added.reverse(), ...current].slice(0, MAX_TOASTS));
-      for (const toast of added) {
-        window.setTimeout(() => setToasts((current) => current.filter((t) => t.key !== toast.key)), TOAST_MS);
+      for (const dropped of list.slice(MAX_TOASTS)) {
+        const pending = timers.get(dropped.key);
+        if (pending !== undefined) window.clearTimeout(pending);
+        timers.delete(dropped.key);
+      }
+      commit(list.slice(0, MAX_TOASTS));
+
+      if (sound && !mutedRef.current) {
+        audio.currentTime = 0;
+        audio.play().catch(() => undefined);
       }
     });
 
     return () => {
       unsubscribe();
       audio.pause();
+      timers.forEach((id) => window.clearTimeout(id));
+      timers.clear();
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
     };
@@ -81,7 +129,14 @@ export function AlertNotifier() {
     setMuted(mutedRef.current);
   };
 
-  const dismiss = (key: number) => setToasts((current) => current.filter((t) => t.key !== key));
+  const dismiss = (key: number) => {
+    const pending = timersRef.current.get(key);
+    if (pending !== undefined) window.clearTimeout(pending);
+    timersRef.current.delete(key);
+    const list = toastsRef.current.filter((t) => t.key !== key);
+    toastsRef.current = list;
+    setToasts(list);
+  };
 
   return (
     <div className="no-print pointer-events-none fixed bottom-4 right-4 z-40 flex w-[22rem] max-w-[calc(100vw-2rem)] flex-col gap-2">
@@ -111,7 +166,7 @@ export function AlertNotifier() {
                       type="button"
                       onClick={() => {
                         const s = useVigia.getState();
-                        downloadIncidentReport(s, alert, s.thresholds);
+                        void downloadIncidentReport(s, alert, s.thresholds);
                       }}
                       className={`${buttonIdle} mt-1 self-start py-1 text-xs`}
                     >
