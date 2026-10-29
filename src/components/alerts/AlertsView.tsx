@@ -37,7 +37,7 @@ export function AlertsView() {
 
       <Panel
         title="Alertas"
-        description={`${pendingCount} sin reconocer. Cada cambio de nivel queda registrado con su hora, ubicación y valor.`}
+        description={`${pendingCount} sin reconocer`}
         actions={
           <>
             <FilterGroup

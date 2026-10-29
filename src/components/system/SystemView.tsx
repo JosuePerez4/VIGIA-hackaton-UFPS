@@ -60,7 +60,6 @@ export function SystemView() {
 
       <Panel
         title="Estación Trolex Sentro 8"
-        description="Vista explosionada del modelo conceptual. Arrastra para rotar; el control de explosión separa las piezas. Disposición interna aproximada, no es el CAD del fabricante."
       >
         <iframe
           src="/devices/sentro8.html"
@@ -71,7 +70,7 @@ export function SystemView() {
         />
       </Panel>
 
-      <Panel title="Dispositivo de procesamiento" description="Estación de entrada de la mina. Envía datos a la plataforma y devuelve las señales de alerta.">
+      <Panel title="Dispositivo de procesamiento">
         <dl className="grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
           <div>
             <dt className="text-ink-muted">Conexión con la plataforma</dt>
@@ -92,7 +91,7 @@ export function SystemView() {
         </dl>
       </Panel>
 
-      <Panel title="Estaciones" description={`Estado de las ${stations.length} estaciones fijas (Trolex Sentro 8, cada 40 m).`}>
+      <Panel title="Estaciones">
         <div className="-mx-5 overflow-x-auto px-5">
           <table className="w-full min-w-[46rem] border-collapse text-left text-sm">
             <caption className="sr-only">Estado de comunicación, batería y calibración de cada estación</caption>
@@ -138,7 +137,7 @@ export function SystemView() {
         </div>
       </Panel>
 
-      <Metric label="Estaciones en línea" value={online} unit={`de ${stations.length}`} footnote="Actualizado en cada tick de la simulación." />
+      <Metric label="Estaciones en línea" value={online} unit={`de ${stations.length}`} />
     </div>
   );
 }

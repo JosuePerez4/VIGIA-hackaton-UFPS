@@ -34,12 +34,12 @@ export function PanelView() {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Metric label="Estado general de la mina" value={LEVEL_META[mineLevel].mineLabel} tone={mineLevel} />
-        <Metric label="Mineros en recorrido" value={workers.length} footnote="Cada uno con su MX6 midiendo" />
+        <Metric label="Mineros en recorrido" value={workers.length} />
         <Metric label="Alertas activas" value={activeAlerts} tone={activeAlerts > 0 ? maxActiveLevel(alerts) : 0} />
         <Metric label="Estaciones en línea" value={online} unit={`de ${stations.length}`} />
       </div>
 
-      <Panel title="Gases en vivo" description="Valor representativo de toda la mina: la estación con mayor concentración (o menor, para O₂ y velocidad del aire).">
+      <Panel title="Gases en vivo">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {GAS_ORDER.map((gas) => (
             <GasCard
@@ -58,32 +58,31 @@ export function PanelView() {
 
       <Panel
         title="Clima de la mina"
-        description="Solo las estaciones Trolex Sentro 8 tienen módulo de humedad. La temperatura húmeda no la mide el dispositivo: se calcula a partir de temperatura y humedad relativa."
       >
         <div className="grid gap-3 md:grid-cols-2">
           <Metric
             label="Humedad relativa (máxima)"
             value={maxRh.climate.rh.toFixed(0)}
             unit="%"
-            footnote={`${maxRh.id} · medida por el módulo de humedad`}
+            footnote={`${maxRh.id} · medida`}
           />
           <Metric
             label="Temperatura húmeda (máxima, calculada)"
             value={maxWetBulb.climate.wetBulbC.toFixed(1)}
             unit="°C"
-            footnote={`${maxWetBulb.id} · calculada con T y HR`}
+            footnote={`${maxWetBulb.id} · calculada`}
           />
         </div>
       </Panel>
 
       <Panel
         title={`Canal rápido y canal lento · ${thresholds[selectedGas].label}`}
-        description="Línea discontinua: canal rápido (dC/dt, alerta en menos de 2 s). Línea continua: promedio móvil de 40 s, registro oficial."
+        description="Discontinua: canal rápido · Continua: canal lento (oficial)"
       >
         <LiveChart gas={selectedGas} />
       </Panel>
 
-      <Panel title="Eventos recientes" description="Últimos eventos de la mina. El detalle completo está en el centro de alertas.">
+      <Panel title="Eventos recientes">
         {recent.length === 0 ? (
           <p className="text-ink-muted">Sin eventos todavía.</p>
         ) : (

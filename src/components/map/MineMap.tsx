@@ -250,9 +250,9 @@ function SignalRing({ position, active, offset }: { position: [number, number, n
   );
 }
 
-const VIEWS: Record<ViewMode, { camera: [number, number, number]; target: [number, number, number]; caption: string }> = {
-  plano: { camera: [0, 11, 8], target: [0, 0, -0.2], caption: 'Vista en plano · superficie arriba' },
-  niveles: { camera: [0, 9.5, 12.5], target: [0, -2.1, -0.2], caption: 'Vista por niveles · la mina baja de arriba hacia abajo' },
+const VIEWS: Record<ViewMode, { camera: [number, number, number]; target: [number, number, number] }> = {
+  plano: { camera: [0, 11, 8], target: [0, 0, -0.2] },
+  niveles: { camera: [0, 9.5, 12.5], target: [0, -2.1, -0.2] },
 };
 
 export function MineMap() {
@@ -423,12 +423,6 @@ export function MineMap() {
           ))}
         </div>
       </div>
-      <p className="pointer-events-none absolute left-3 top-3 rounded-sm bg-canvas/85 px-2 py-1 text-xs text-ink-muted">
-        {view.caption}
-      </p>
-      <p className="pointer-events-none absolute bottom-3 right-3 rounded-sm bg-canvas/85 px-2 py-1 text-xs text-ink-muted">
-        Arrastra para rotar · rueda para acercar · clic en estación o minero
-      </p>
       <span className="sr-only">
         {`Mapa de la mina en vista ${mode === 'plano' ? 'de plano' : 'por niveles'} con ${stations.length} estaciones y ${workers.length} mineros con MX6.`}
       </span>

@@ -33,7 +33,6 @@ export function SimulationView() {
       <div className="space-y-6">
         <Panel
           title="Escenarios"
-          description="Cada escenario actualiza el panel, el mapa, las alertas y el personal a la vez. Atajos durante la presentación: teclas 1 a 6, espacio para pausar, R para reiniciar."
         >
           <div className="grid gap-3 md:grid-cols-2">
             {SCENARIOS.map((item) => {
@@ -59,7 +58,7 @@ export function SimulationView() {
           </div>
         </Panel>
 
-        <Panel title="Control" description="Velocidad, pausa y punto del evento.">
+        <Panel title="Control">
           <div className="flex flex-col gap-5">
             <div className="flex flex-wrap items-end gap-4">
               <label className="flex min-w-[16rem] flex-1 flex-col gap-1.5 text-sm text-ink-muted">
@@ -76,11 +75,6 @@ export function SimulationView() {
                   ))}
                 </select>
               </label>
-              {definition.needsTarget ? (
-                <p className="max-w-sm text-sm text-ink-muted">
-                  Este escenario usa la estación elegida. Al lanzarlo con una tecla también se usa esta estación.
-                </p>
-              ) : null}
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -112,7 +106,7 @@ export function SimulationView() {
       </div>
 
       <div className="space-y-6">
-        <Panel title={`Línea de tiempo · ${definition.name}`} description="Etapas del escenario según avanza el reloj.">
+        <Panel title={`Línea de tiempo · ${definition.name}`}>
           <ol className="space-y-3">
             {definition.steps.map((step, index) => {
               const done = elapsed >= step.at;
@@ -140,7 +134,7 @@ export function SimulationView() {
           </ol>
         </Panel>
 
-        <Panel title="Registro de eventos" description="Eventos reales generados por el motor (cambios de nivel y acciones).">
+        <Panel title="Registro de eventos">
           {log.length === 0 ? (
             <p className="text-ink-muted">Sin eventos todavía.</p>
           ) : (

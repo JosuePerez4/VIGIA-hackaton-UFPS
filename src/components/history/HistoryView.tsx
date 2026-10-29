@@ -88,7 +88,7 @@ export function HistoryView() {
 
   return (
     <div className="space-y-6">
-      <Panel title="Consulta" description="Datos simulados. Filtra por gas, estación y rango de fechas.">
+      <Panel title="Consulta">
         <div className="flex flex-wrap items-end gap-4">
           <label className="flex min-w-[14rem] flex-col gap-1.5 text-sm text-ink-muted">
             Gas
@@ -145,7 +145,6 @@ export function HistoryView() {
 
       <Panel
         title={`${threshold.label} · ${stationId === 'mina' ? 'mina' : stationId}`}
-        description={compare ? 'Línea continua: periodo actual. Línea discontinua: periodo anterior del mismo tamaño.' : `Rango: ${range.label}.`}
       >
         <div className="h-80 w-full" role="img" aria-label={`Histórico simulado de ${threshold.label}`}>
           <ResponsiveContainer width="100%" height="100%">
@@ -170,7 +169,7 @@ export function HistoryView() {
         </div>
       </Panel>
 
-      <Panel title="Eventos del periodo" description={`Cruces del umbral de Nivel 1 o superior. Mostrando hasta 15 de los más recientes.`}>
+      <Panel title="Eventos del periodo">
         {events.length === 0 ? (
           <p className="text-ink-muted">Sin eventos en este periodo para este gas y estación.</p>
         ) : (
@@ -201,13 +200,7 @@ export function HistoryView() {
           </div>
         )}
       </Panel>
-
-      <p className="text-sm text-ink-muted">
-        Histórico generado con datos simulados. Los niveles usan los umbrales de ejemplo de Configuración, pendientes de la normativa.
-        Nivel de referencia en el periodo: {LEVEL_LABEL[levelFor(extreme, threshold)]}.
-      </p>
     </div>
   );
 }
 
-const LEVEL_LABEL = ['Normal', 'Precaución', 'Alerta', 'Emergencia'] as const;

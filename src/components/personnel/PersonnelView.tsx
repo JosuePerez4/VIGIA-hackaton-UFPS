@@ -31,7 +31,6 @@ export function PersonnelView() {
 
       <Panel
         title="Personal y dispositivos MX6"
-        description="Cada MX6 mide el gas en el punto donde está el minero y se enlaza a la estación más cercana. TWA: exposición promedio desde el inicio del turno."
       >
         <div className="-mx-5 overflow-x-auto px-5">
           <table className="w-full min-w-[60rem] border-collapse text-left text-sm">

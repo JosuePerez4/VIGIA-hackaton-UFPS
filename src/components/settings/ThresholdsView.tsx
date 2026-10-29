@@ -20,16 +20,11 @@ export function ThresholdsView() {
   return (
     <div className="space-y-6">
       <div className="rounded-md border border-lvl1/40 bg-panel p-5 text-sm text-ink">
-        <p className="font-medium">Valores de ejemplo, no son valores legales.</p>
-        <p className="mt-1 text-ink-muted">
-          Estos umbrales se ajustarán con el Decreto 1886 de 2015 y el Decreto 944 de 2022. Los cambios se aplican en vivo al
-          motor de simulación. Los valores también están en <code className="font-mono">src/config/thresholds.ts</code>.
-        </p>
+        <p className="font-medium">Valores de ejemplo, no son valores legales.</p>
       </div>
 
       <Panel
         title="Umbrales por gas"
-        description="Nivel 1: precaución. Nivel 2: alerta. Nivel 3: emergencia. El canal rápido dispara una alerta temprana cuando la tasa de cambio supera el valor indicado."
         actions={
           <button type="button" onClick={restore} className={buttonIdle}>
             Restaurar valores por defecto

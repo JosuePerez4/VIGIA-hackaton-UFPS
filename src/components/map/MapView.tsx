@@ -64,7 +64,7 @@ export function MapView() {
       </div>
 
       <div className="space-y-6">
-        <Panel title="Detalle" description="Haz clic en una estación o minero del mapa, o elige uno de la lista.">
+        <Panel title="Detalle">
           {station ? (
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
@@ -97,10 +97,7 @@ export function MapView() {
                   <dt className="text-ink-muted">Temperatura húmeda (calculada)</dt>
                   <dd className="tabular-nums text-ink">{station.climate.wetBulbC.toFixed(1)} °C</dd>
                 </div>
-              </dl>
-              <p className="text-xs text-ink-muted">
-                Temperatura y humedad relativa: módulos del Trolex Sentro 8. La temperatura húmeda no la mide el dispositivo: se calcula con la fórmula de Stull a partir de ambas.
-              </p>
+              </dl>
               <table className="w-full text-sm">
                 <caption className="sr-only">Lecturas de la estación {station.id}</caption>
                 <thead>
@@ -161,7 +158,7 @@ export function MapView() {
           )}
         </Panel>
 
-        <Panel title="Estaciones" description="Lista accesible para seleccionar sin mouse.">
+        <Panel title="Estaciones">
           <ul className="grid max-h-80 gap-1 overflow-y-auto pr-1">
             {stations.map((st) => (
               <li key={st.id}>
@@ -181,7 +178,7 @@ export function MapView() {
           </ul>
         </Panel>
 
-        <Panel title="Mineros con MX6" description="Haz clic para resaltar un minero en el mapa.">
+        <Panel title="Mineros con MX6">
           <ul className="grid max-h-64 gap-1 overflow-y-auto pr-1">
             {workers.map((w) => (
               <li key={w.id}>
