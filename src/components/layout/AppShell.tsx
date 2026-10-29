@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  Cpu,
   Bell,
   History,
   LayoutDashboard,
@@ -29,6 +30,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/personal', label: 'Personal', icon: Users },
   { href: '/historial', label: 'Historial y reportes', icon: History },
   { href: '/sistema', label: 'Estado del sistema', icon: Activity },
+  { href: '/dispositivos', label: 'Dispositivos', icon: Cpu },
   { href: '/configuracion', label: 'Umbrales', icon: SlidersHorizontal },
 ];
 
