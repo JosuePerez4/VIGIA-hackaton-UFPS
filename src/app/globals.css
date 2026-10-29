@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-barlow-condensed), var(--font-barlow), ui-sans-serif, sans-serif;
+
+  --color-canvas: #0a0e13;
+  --color-panel: #111820;
+  --color-panel-2: #161f29;
+  --color-line: #1f2b37;
+  --color-ink: #e8eef4;
+  --color-ink-muted: #8a9aab;
+
+  /* Color solo para estados. La interfaz base es neutra. */
+  --color-lvl0: #34d399;
+  --color-lvl1: #facc15;
+  --color-lvl2: #fb923c;
+  --color-lvl3: #f43f5e;
+}
+
+:root {
+  color-scheme: dark;
+  scrollbar-color: #2a3847 transparent;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  background-image: linear-gradient(rgba(138, 154, 171, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(138, 154, 171, 0.035) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+::selection {
+  background: var(--color-ink);
+  color: var(--color-canvas);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  body {
+    background-image: none;
+  }
+}
