@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { SCENARIO_BY_ID } from '@/sim/scenarios';
 import { useVigia } from '@/store/vigia-store';
 import { LevelPill } from '@/components/ui/primitives';
+import { AlertNotifier } from '@/components/alerts/AlertNotifier';
 import { EmergencyBanner } from '@/components/alerts/EmergencyBanner';
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
@@ -104,6 +105,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
       </div>
 
+      <AlertNotifier />
       <EmergencyBanner />
     </div>
   );
