@@ -2,8 +2,10 @@
 
 import {
   Activity,
-  Cpu,
   Bell,
+  ChevronLeft,
+  ChevronRight,
+  Cpu,
   History,
   LayoutDashboard,
   Map as MapIcon,
@@ -54,12 +56,28 @@ export function AppShell({ children }: { children: ReactNode }) {
   const paused = useVigia((s) => s.paused);
   const current = NAV.find((item) => pathname.startsWith(item.href));
   const scenarioName = SCENARIO_BY_ID[scenario].name;
+  const [open, setOpen] = useState(true);
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
-      <aside className="no-print border-b border-line bg-panel md:sticky md:top-0 md:h-dvh md:w-60 md:shrink-0 md:border-b-0 md:border-r">
-        <div className="flex items-center gap-3 px-5 py-4 md:py-6">
-          <span className="font-display text-3xl font-semibold tracking-[0.18em] text-ink">VIGIA</span>
+      <aside
+        className={`no-print border-b border-line bg-panel transition-[width] duration-200 md:sticky md:top-0 md:h-dvh md:shrink-0 md:border-b-0 md:border-r ${
+          open ? 'md:w-60' : 'md:w-16'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3 px-5 py-4 md:px-3 md:py-6">
+          <span className={`font-display text-3xl font-semibold tracking-[0.18em] text-ink ${open ? '' : 'md:hidden'}`}>
+            VIGIA
+          </span>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-label={open ? 'Contraer menú' : 'Desplegar menú'}
+            className="hidden rounded-sm p-1.5 text-ink-muted hover:bg-panel-2 hover:text-ink md:block"
+          >
+            {open ? <ChevronLeft aria-hidden="true" className="size-4" /> : <ChevronRight aria-hidden="true" className="size-4" />}
+          </button>
         </div>
         <nav aria-label="Secciones" className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:overflow-visible md:pb-0">
           {NAV.map((item) => {
@@ -69,13 +87,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                title={open ? undefined : item.label}
+                aria-label={open ? undefined : item.label}
                 aria-current={active ? 'page' : undefined}
                 className={`flex shrink-0 items-center gap-3 rounded-sm px-3 py-2.5 text-sm transition-colors ${
                   active ? 'bg-panel-2 text-ink ring-1 ring-line' : 'text-ink-muted hover:bg-panel-2 hover:text-ink'
                 }`}
               >
                 <Icon aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.75} />
-                <span className="whitespace-nowrap">{item.label}</span>
+                <span className={`whitespace-nowrap ${open ? '' : 'md:hidden'}`}>{item.label}</span>
               </Link>
             );
           })}
