@@ -70,6 +70,16 @@ export function SystemView() {
         />
       </Panel>
 
+      <Panel title="Dispositivo MX6 iBrid">
+        <iframe
+          src="/devices/mx6.html"
+          title="Vista del dispositivo MX6 iBrid, explosionado y puesto en el cuerpo"
+          loading="lazy"
+          sandbox="allow-scripts"
+          className="h-[34rem] w-full rounded-sm border border-line bg-canvas"
+        />
+      </Panel>
+
       <Panel title="Dispositivo de procesamiento">
         <dl className="grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
           <div>
