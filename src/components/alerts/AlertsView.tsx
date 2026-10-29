@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { LevelPill, Metric, Panel, buttonActive, buttonIdle } from '@/components/ui/primitives';
-import type { Level } from '@/config/thresholds';
+import { gasThreshold, type Level } from '@/config/thresholds';
 import { downloadAlertsCsv, downloadIncidentReport, downloadTurnReport } from '@/lib/reports';
 import { NODE_BY_ID } from '@/sim/mine';
 import { useVigia } from '@/store/vigia-store';
@@ -98,7 +98,7 @@ export function AlertsView() {
               </thead>
               <tbody className="divide-y divide-line">
                 {rows.map((alert) => {
-                  const threshold = thresholds[alert.gas];
+                  const threshold = gasThreshold(alert.gas, thresholds);
                   const canAck = alert.status === 'activa' && !alert.acknowledged;
                   return (
                     <tr key={alert.id} className="align-middle">
@@ -108,9 +108,9 @@ export function AlertsView() {
                         <span className="font-medium">{alert.stationId}</span>
                         <span className="block text-xs text-ink-muted">{NODE_BY_ID[alert.stationId]?.name.split(' · ')[1]}</span>
                       </td>
-                      <td className="py-3 pr-4 text-ink">{threshold.label}</td>
+                      <td className="py-3 pr-4 text-ink">{alert.kind === 'equipo' ? alert.detail : threshold.label}</td>
                       <td className="py-3 pr-4 text-right tabular-nums text-ink">
-                        {alert.value.toFixed(threshold.decimals)} <span className="text-ink-muted">{threshold.unit}</span>
+                        {alert.kind === 'equipo' ? '—' : alert.value.toFixed(threshold.decimals)} <span className="text-ink-muted">{threshold.unit}</span>
                       </td>
                       <td className="py-3 pr-4 text-ink-muted">{alert.channel === 'rápido' ? 'Rápido' : 'Lento (oficial)'}</td>
                       <td className="py-3 pr-4 capitalize text-ink-muted">{alert.status}</td>

@@ -1,4 +1,4 @@
-import { LEVEL_META, type GasKey, type GasThreshold } from '@/config/thresholds';
+import { LEVEL_META, gasThreshold, type GasKey, type GasThreshold } from '@/config/thresholds';
 import { incidentPdf, turnPdf } from '@/lib/pdf/reports-pdf';
 import type { AlertRecord, MineSnapshot } from '@/sim/types';
 
@@ -10,7 +10,7 @@ const csvCell = (value: unknown) => `"${String(value).replace(/"/g, '""')}"`;
 export function alertsCsv(snapshot: MineSnapshot, thresholds: Thresholds): string {
   const header = ['id', 'hora', 'estacion', 'gas', 'nivel', 'valor', 'unidad', 'canal', 'estado', 'reconocida'];
   const rows = snapshot.alerts.map((a) => {
-    const t = thresholds[a.gas];
+    const t = gasThreshold(a.gas, thresholds);
     return [a.id, a.time, a.stationId, t.label, LEVEL_META[a.level].mineLabel, a.value.toFixed(t.decimals), t.unit, a.channel, a.status, a.acknowledged ? 'sí' : 'no']
       .map(csvCell)
       .join(',');

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { LevelPill, buttonIdle } from '@/components/ui/primitives';
+import { gasThreshold } from '@/config/thresholds';
 import { downloadIncidentReport } from '@/lib/reports';
 import { NODE_BY_ID } from '@/sim/mine';
 import type { AlertRecord } from '@/sim/types';
@@ -148,18 +149,18 @@ export function AlertNotifier() {
       <div aria-live="assertive" role="status" className="flex flex-col gap-2">
         {toasts.map(({ key, alert }) => {
           const station = NODE_BY_ID[alert.stationId];
-          const threshold = thresholds[alert.gas];
+          const threshold = gasThreshold(alert.gas, thresholds);
           return (
             <div key={key} className="pointer-events-auto rounded-md border border-line bg-panel p-4 shadow-lg">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1.5">
                   <LevelPill level={alert.level} compact />
-                  <p className="font-medium text-ink">{threshold.label}</p>
+                  <p className="font-medium text-ink">{alert.kind === 'equipo' ? alert.detail : threshold.label}</p>
                   <p className="text-sm text-ink-muted">
                     {alert.stationId} · {station?.name.split(' · ')[1]}
                   </p>
                   <p className="tabular-nums text-sm text-ink">
-                    {alert.value.toFixed(threshold.decimals)} {threshold.unit} · {alert.time}
+                    {alert.kind === 'equipo' ? alert.time : `${alert.value.toFixed(threshold.decimals)} ${threshold.unit} · ${alert.time}`}
                   </p>
                   {alert.level >= 2 ? (
                     <button

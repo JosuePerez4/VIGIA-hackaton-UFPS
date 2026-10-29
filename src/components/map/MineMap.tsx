@@ -20,6 +20,12 @@ export const TYPE_COLORS = {
   cable: '#cbd5e1',
 } as const;
 
+/** Estados de dispositivo: falla (rojo) y alimentación por batería durante un corte de luz. */
+export const STATE_COLORS = {
+  fault: '#f43f5e',
+  battery: '#e879f9',
+} as const;
+
 export type ViewMode = 'plano' | 'niveles';
 
 /** Niveles de la mina en modo "niveles": de arriba hacia abajo. Y en la escena. */
@@ -304,6 +310,7 @@ export function MineMap() {
 
         {stations.map((st) => {
           const levelColor = LEVEL_COLORS[st.level];
+          const bodyColor = !st.online ? STATE_COLORS.fault : st.onBattery ? STATE_COLORS.battery : TYPE_COLORS.station;
           const selected = st.id === selectedStationId;
           const [x, y, z] = place(st.id);
           return (
@@ -318,7 +325,7 @@ export function MineMap() {
                 onPointerOut={() => (document.body.style.cursor = '')}
               >
                 <boxGeometry args={[0.22, 0.22, 0.22]} />
-                <meshStandardMaterial color={TYPE_COLORS.station} emissive={TYPE_COLORS.station} emissiveIntensity={0.3} />
+                <meshStandardMaterial color={bodyColor} emissive={bodyColor} emissiveIntensity={0.3} />
               </mesh>
               <mesh position={[x, y + 0.03, z]} rotation={SQUARE_FLAT}>
                 <ringGeometry args={[0.2, 0.235, 4]} />
@@ -376,7 +383,7 @@ export function MineMap() {
                 scale={selected ? 1.5 : 1}
               >
                 <sphereGeometry args={[0.11, 20, 20]} />
-                <meshStandardMaterial color={TYPE_COLORS.mx6} emissive={TYPE_COLORS.mx6} emissiveIntensity={0.4} />
+                <meshStandardMaterial color={w.failed ? STATE_COLORS.fault : TYPE_COLORS.mx6} emissive={w.failed ? STATE_COLORS.fault : TYPE_COLORS.mx6} emissiveIntensity={0.4} />
               </mesh>
             </group>
           );
@@ -415,6 +422,8 @@ export function MineMap() {
           <Legend color={TYPE_COLORS.receiver} label="Receptor y procesador" />
           <Legend color={TYPE_COLORS.base} label="Base del ingeniero" />
           <Legend color={TYPE_COLORS.cable} label="Cable de fibra" />
+          <Legend color={STATE_COLORS.fault} label="Dispositivo con falla" />
+          <Legend color={STATE_COLORS.battery} label="Estación en batería" />
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-2">
           <span className="text-ink-muted">Aro de estación:</span>

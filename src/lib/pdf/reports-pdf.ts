@@ -1,5 +1,5 @@
 import { rgb, type RGB } from 'pdf-lib';
-import { GAS_ORDER, LEVEL_META, levelFor, type GasKey, type GasThreshold, type Level } from '@/config/thresholds';
+import { GAS_ORDER, LEVEL_META, gasThreshold, levelFor, type GasKey, type GasThreshold, type Level } from '@/config/thresholds';
 import { clockFromElapsed, engine } from '@/sim/engine';
 import { NODE_BY_ID } from '@/sim/mine';
 import type { AlertRecord, MineSnapshot } from '@/sim/types';
@@ -56,7 +56,8 @@ function trendSentence(
 
 /** Reporte de incidente: la alerta, cómo evolucionó el gas, lo que medía la estación, quién estaba cerca y lo que pasó alrededor. */
 export async function incidentPdf(snapshot: MineSnapshot, alert: AlertRecord, thresholds: Thresholds): Promise<Uint8Array> {
-  const threshold = thresholds[alert.gas];
+  const threshold = gasThreshold(alert.gas, thresholds);
+  const isEquipment = alert.kind === 'equipo';
   const station = snapshot.stations.find((s) => s.id === alert.stationId);
   const from = alert.elapsed - CONTEXT_S;
   const to = alert.elapsed + CONTEXT_S;
@@ -67,7 +68,7 @@ export async function incidentPdf(snapshot: MineSnapshot, alert: AlertRecord, th
   const clock = (elapsed: number) => clockFromElapsed(elapsed, snapshot.startSeconds);
 
   // Evolución: promedio de 40 s de la estación desde antes de la alerta hasta el momento del reporte.
-  const trace = engine.stationTrace(alert.stationId, alert.gas, Math.max(0, alert.elapsed - LEAD_S), snapshot.elapsed);
+  const trace = isEquipment ? [] : engine.stationTrace(alert.stationId, alert.gas as GasKey, Math.max(0, alert.elapsed - LEAD_S), snapshot.elapsed);
   const values = trace.map((p) => p.v);
   const first = values[0];
   const last = values[values.length - 1];
@@ -76,17 +77,18 @@ export async function incidentPdf(snapshot: MineSnapshot, alert: AlertRecord, th
   const report = await PdfReport.create(`VIGIA · Reporte de incidente #${alert.id} · Fuente: simulación · ${stamp()}`);
   report.cover(
     `Reporte de incidente #${alert.id}`,
-    `${LEVEL_META[alert.level].label} · ${alert.stationId} · ${threshold.label} · ${alert.time}`,
+    `${LEVEL_META[alert.level].label} · ${alert.stationId} · ${isEquipment ? alert.detail : threshold.label} · ${alert.time}`,
     LEVEL_FILL[alert.level],
   );
 
   report.kpis([
     { label: 'Nivel', value: LEVEL_META[alert.level].mineLabel, color: LEVEL_TEXT_COLORS[alert.level] },
-    { label: 'Valor al disparar', value: `${fmt(alert.value, threshold.decimals)} ${threshold.unit}` },
+    { label: isEquipment ? 'Tipo' : 'Valor al disparar', value: isEquipment ? 'Equipo' : `${fmt(alert.value, threshold.decimals)} ${threshold.unit}` },
     { label: 'Estación', value: alert.stationId },
     { label: 'Hora simulada', value: alert.time },
   ]);
 
+  if (!isEquipment) {
   report.heading('Evolución');
   if (values.length >= 2) {
     report.paragraph(
@@ -115,16 +117,18 @@ export async function incidentPdf(snapshot: MineSnapshot, alert: AlertRecord, th
   } else {
     report.empty('Todavía no hay suficientes datos para mostrar la evolución.');
   }
+  }
 
   report.heading('Alerta');
   report.keyValues([
-    ['Gas', threshold.label],
+    isEquipment ? ['Detalle', alert.detail] : ['Gas', threshold.label],
     ['Área', stationArea(alert.stationId)],
     ['Canal que disparó', alert.channel === 'rápido' ? 'Canal rápido' : 'Canal lento (oficial)'],
     ['Estado', `${alert.status}${alert.acknowledged ? ' · reconocida' : ' · sin reconocer'}`],
     ['Estado general de la mina', LEVEL_META[snapshot.mineLevel].label],
   ]);
 
+  if (!isEquipment) {
   report.heading('Lecturas de la estación al generar el reporte');
   if (station) {
     report.table({
@@ -144,6 +148,7 @@ export async function incidentPdf(snapshot: MineSnapshot, alert: AlertRecord, th
     ]);
   } else {
     report.empty('Estación no encontrada en el estado actual.');
+  }
   }
 
   report.heading('Mineros enlazados a la estación');
@@ -182,7 +187,7 @@ export async function incidentPdf(snapshot: MineSnapshot, alert: AlertRecord, th
     report.table({
       headers: ['Hora', 'Estación', 'Gas', 'Nivel', 'Estado'],
       widths: [0.14, 0.14, 0.34, 0.18, 0.2],
-      rows: others.map((a) => [a.time, a.stationId, thresholds[a.gas].label, levelCell(a.level), a.status]),
+      rows: others.map((a) => [a.time, a.stationId, gasThreshold(a.gas, thresholds).label, levelCell(a.level), a.status]),
     });
   } else {
     report.empty('Ninguna.');
@@ -267,9 +272,9 @@ export async function turnPdf(snapshot: MineSnapshot, thresholds: Thresholds): P
         String(a.id),
         a.time,
         a.stationId,
-        thresholds[a.gas].label,
+        a.kind === 'equipo' ? a.detail : thresholds[a.gas as GasKey].label,
         levelCell(a.level),
-        `${fmt(a.value, thresholds[a.gas].decimals)} ${thresholds[a.gas].unit}`,
+        a.kind === 'equipo' ? '-' : `${fmt(a.value, thresholds[a.gas as GasKey].decimals)} ${thresholds[a.gas as GasKey].unit}`,
         a.channel,
         `${a.status}${a.acknowledged ? ' · rec.' : ''}`,
       ]),

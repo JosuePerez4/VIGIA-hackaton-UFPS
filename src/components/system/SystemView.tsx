@@ -103,7 +103,7 @@ export function SystemView() {
                   <tr key={st.id}>
                     <td className="py-2.5 pr-4 font-medium text-ink">{st.id}</td>
                     <td className="py-2.5 pr-4 text-ink-muted">{NODE_BY_ID[st.id].name.split(' · ')[1]}</td>
-                    <td className="py-2.5 pr-4 text-ink">{st.online ? '● En línea' : '○ Sin señal'}</td>
+                    <td className={st.online ? 'py-2.5 pr-4 text-ink' : 'py-2.5 pr-4 font-semibold text-lvl3'}>{st.online ? '● En línea' : '○ Sin señal'}</td>
                     <td className="py-2.5 pr-4">
                       <div className="flex items-center gap-3">
                         <span className="h-1.5 w-24 overflow-hidden rounded-full bg-line" aria-hidden="true">

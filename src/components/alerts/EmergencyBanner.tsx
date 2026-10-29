@@ -1,5 +1,6 @@
 'use client';
 
+import { gasThreshold } from '@/config/thresholds';
 import { NODE_BY_ID } from '@/sim/mine';
 import { useVigia } from '@/store/vigia-store';
 
@@ -16,7 +17,7 @@ export function EmergencyBanner() {
   if (!alert || alert.id === dismissedId) return null;
 
   const station = NODE_BY_ID[alert.stationId];
-  const threshold = thresholds[alert.gas];
+  const threshold = gasThreshold(alert.gas, thresholds);
 
   return (
     <div
@@ -30,13 +31,13 @@ export function EmergencyBanner() {
         </div>
         <div className="space-y-5 p-6 md:p-8">
           <h2 id="alert-title" className="font-display text-4xl font-semibold leading-tight text-ink md:text-5xl">
-            {threshold.label}
+            {alert.kind === 'equipo' ? alert.detail : threshold.label}
           </h2>
           <p className="text-lg text-ink-muted">
             {alert.stationId} · {station?.name.split(' · ')[1]}
           </p>
           <p className="font-display text-5xl font-semibold tabular-nums text-lvl3">
-            {alert.value.toFixed(threshold.decimals)}
+            {alert.kind === 'equipo' ? '' : alert.value.toFixed(threshold.decimals)}
             <span className="ml-2 text-2xl font-medium text-ink-muted">{threshold.unit}</span>
           </p>
           <p className="tabular-nums text-ink-muted">Hora {alert.time}</p>

@@ -61,7 +61,7 @@ export function PersonnelView() {
                   <td className="py-3 pr-4 text-ink">
                     {w.linkedStationId} <span className="text-ink-muted">· {stationName(w.linkedStationId)}</span>
                   </td>
-                  <td className="py-3 pr-4"><LevelPill level={w.level} compact /></td>
+                  <td className="py-3 pr-4">{w.failed ? <span className="text-xs font-semibold text-lvl3">FALLA DEL MX6</span> : <LevelPill level={w.level} compact />}</td>
                   {SHOWN_GASES.map((gas) => (
                     <td key={gas} className="py-3 pr-4 text-right tabular-nums text-ink">
                       {w.reading[gas].toFixed(thresholds[gas].decimals)}{' '}
